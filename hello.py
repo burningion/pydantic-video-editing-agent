@@ -22,7 +22,7 @@ server = MCPServerStdio(
         'VJ_API_KEY': vj_api_key,
     }
 )
-model =AnthropicModel("claude-3-7-sonnet-20250219")
+model = AnthropicModel("claude-3-7-sonnet-20250219")
 
 agent = Agent(  
     model=model,
