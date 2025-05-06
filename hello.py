@@ -34,7 +34,7 @@ agent = Agent(
 async def main():
     async with agent.run_mcp_servers():
         print("Agent is running")
-        result = await agent.run('can you search my remote videos for all skateboarding clips? make sure to exclude demo videos')  
+        result = await agent.run('can you search my remote videos for all skateboarding clips?')  
     print(result.output)
 
 if __name__ == "__main__":
