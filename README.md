@@ -1,12 +1,14 @@
 # Pydantic Video Editing Agent 
 
-You'll need a Video Jungle API key and an Anthropic key. Once you've got both:
+You'll need a [Video Jungle API key](https://app.video-jungle.com/profile/settings) and an Anthropic key. Once you've got both:
 
 ```
 uv run hello.py
 ```
 
-This will call the MCP server to search your video files for skateboarding, and generate a text summary. 
+This will call the MCP server to search your video files for skateboarding, and generate a text summary of each video. 
+
+# Example output
 
 Here's an example output from my collection:
 
