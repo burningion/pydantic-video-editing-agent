@@ -1,0 +1,10 @@
+[project]
+name = "video-editing-agent"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic-ai[logfire,mcp]>=0.1.9",
+    "videojungle>=0.1.58",
+]
