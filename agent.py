@@ -3,7 +3,7 @@ from pydantic_ai import Agent
 from pydantic_ai.models.anthropic import AnthropicModel
 from pydantic_ai.mcp import MCPServerStdio
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Fieldg
 from typing import List
 from utils.tools import download, extract_info
 import logfire
@@ -94,7 +94,7 @@ async def main():
     for video in result.output.videos:
         print(f"Title: {video.title}, URL: {video.url}")
         # Download the video
-        download(video.url, output_path="downloads", format="best")
+        download(video.url, output_path=f"{video.title}.mp4", format="best")
         # Extract info from the video
         info = extract_info(video.url)
         print(f"Video Info: {info}")
