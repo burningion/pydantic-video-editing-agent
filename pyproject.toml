@@ -7,4 +7,5 @@ requires-python = ">=3.11"
 dependencies = [
     "pydantic-ai[logfire,mcp]>=0.1.9",
     "videojungle>=0.1.58",
+    "yt-dlp[curl-cffi,default]>=2025.4.30",
 ]

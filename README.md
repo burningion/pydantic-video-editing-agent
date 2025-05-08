@@ -3,7 +3,7 @@
 You'll need a [Video Jungle API key](https://app.video-jungle.com/profile/settings) and an Anthropic key. Once you've got both:
 
 ```
-uv run hello.py
+uv run search.py
 ```
 
 This will call the MCP server to search your video files for skateboarding, and generate a text summary of each video. 
