@@ -9,3 +9,8 @@ dependencies = [
     "videojungle>=0.1.58",
     "yt-dlp[curl-cffi,default]>=2025.4.30",
 ]
+
+[dependency-groups]
+dev = [
+    "ipython>=9.2.0",
+]

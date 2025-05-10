@@ -99,7 +99,8 @@ class YtDlpImpersonator:
         ydl_opts = {
             'quiet': False,
             'format': format,
-            'impersonate': self.target  # Use the ImpersonateTarget object directly
+            # Simplify impersonation to just use browser name
+            'impersonate': self.target.client + (f"-{self.target.version}" if self.target.version else "")
         }
         
         # Add output path if specified
@@ -124,11 +125,13 @@ class YtDlpImpersonator:
     def _fallback_download(self, url, output_path=None, format='best', download=True, **extra_opts):
         """Fallback method using subprocess if the API approach fails"""
         cmd = ['yt-dlp']
-        
-        # Format target string (CLIENT-VERSION:OS-VERSION)
-        target_str = f"{self.target.client}-{self.target.version}:{self.target.os}-{self.target.os_version}"
+
+        # Simplify target string to just browser name (no OS)
+        target_str = f"{self.target.client}"
+        if self.target.version:
+            target_str += f"-{self.target.version}"
         cmd.extend(['--impersonate', target_str])
-        
+
         # Add format
         cmd.extend(['-f', format])
         
