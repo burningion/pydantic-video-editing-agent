@@ -120,16 +120,8 @@ async def main():
                     filename=output_filename,
                 )
                 successful_videos += 1
-
-                # Extract info from the video
-                try:
-                    info = extract_info(video.url)
-                    print(f"Video Info: {info}")
-                except Exception as e:
-                    print(f"Warning: Could not extract info for {video.title}: {e}")
-
                 # Optionally, you can delete the local file after uploading
-                # os.remove(output_filename)
+                os.remove(output_filename)
             else:
                 print(f"Error: Download failed or file not found for {video.title}")
                 failed_videos.append(video.title)
@@ -145,9 +137,12 @@ async def main():
         print(f"Failed to process {len(failed_videos)} videos: {', '.join(failed_videos)}")
 
     # Next we can use the project info to generate a rough cut
-
-
-
+    async with agent.run_mcp_servers():
+        print("Video Editing Agent is now running")
+        result = await agent.run(f"can you use the video assets in the project_id '{project.id}' to create a rough cut edit of all the videos? be sure to not render the final video, just create the edit")
+    print(result)
+    print("Rough cut created successfully")
+    
 if __name__ == "__main__":
     import asyncio
     asyncio.run(main())
