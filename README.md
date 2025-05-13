@@ -1,6 +1,22 @@
-# Pydantic Video Editing Agent 
+# Pydantic Video Editing Agents
 
-You'll need a [Video Jungle API key](https://app.video-jungle.com/profile/settings) and an Anthropic key. Once you've got both:
+You'll need a [Video Jungle API key](https://app.video-jungle.com/profile/settings), set as `VJ_API_KEY`, and an Anthropic API key. 
+
+You can then git clone this repo, followed by a `uv sync`.
+
+## Search and Edit Video Agent
+
+For this Agent you'll also need a [Serper API Key](https://serper.dev/), set as `SERPER_API_KEY`
+
+```
+uv run agent.py
+```
+
+This will search for the latest Nathan Fielder videos, download them to your computer, and then upload them to Video Jungle for analysis in a new project.
+
+It will then use this analysis to create a new video edit for you.
+
+## Search and Query Agent 
 
 ```
 uv run search.py
