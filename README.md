@@ -6,6 +6,8 @@ You can then git clone this repo, followed by a `uv sync`.
 
 ## Search and Edit Video Agent
 
+![Video Editing Agent](./assets/pydantic-agent.png)
+
 For this Agent you'll also need a [Serper API Key](https://serper.dev/), set as `SERPER_API_KEY`
 
 ```

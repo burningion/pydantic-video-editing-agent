@@ -10,9 +10,10 @@ from videojungle import ApiClient
 
 from pydantic import BaseModel, Field
 from typing import List
-from utils.tools import download, extract_info
+from utils.tools import download 
 import logfire
 import os
+import time
 
 if not os.environ.get("VJ_API_KEY"):
     raise ValueError("VJ_API_KEY environment variable is not set.")
@@ -108,7 +109,7 @@ search_agent = Agent(
 async def main():
     async with search_agent.run_mcp_servers():
         print("Search Agent is running")
-        result = await search_agent.run("can you search the web for the newest clips about nathan fielder? I'd like a list of 5 urls with video clips",
+        result = await search_agent.run("can you search the web for the newest clips about nathan fielder? I'd like a list of 5 urls with video clips. it's may 13, 2025 by the way, and nathan is doing a show called 'the rehearsal'.",
                                         usage_limits=UsageLimits(request_limit=5))
         
     print(result)
@@ -154,14 +155,15 @@ async def main():
     print(f"\nSummary: Successfully processed {successful_videos} videos")
     if failed_videos:
         print(f"Failed to process {len(failed_videos)} videos: {', '.join(failed_videos)}")
-
+    time.sleep(10) # wait for analysis to finish
     # Next we can use the project info to generate a rough cut
     async with edit_agent.run_mcp_servers():
         print("Video Editing Agent is now running")
-        result = await edit_agent.run(f"can you use the video assets in the project_id '{project.id}' to create a single edit incorporating all the videos? be sure to not render the final video, just create the edit",
+        result = await edit_agent.run(f"can you use the video assets in the project_id '{project.id}' to create a single edit incorporating all the videos? be sure to not render the final video, just create the edit. if any outdoor scenes, show them first.",
                                       )#usage_limits=UsageLimits(request_limit=3))
     print(result)
-    vj.edits.open_in_browser(project.id, result.output.edit_id)
+    # below is not necessary because open the edit in the browser is default behavior
+    #vj.edits.open_in_browser(project.id, result.output.edit_id)
 
 if __name__ == "__main__":
     import asyncio
