@@ -1,4 +1,3 @@
-
 from pydantic_ai import Agent
 from pydantic_ai.exceptions import UsageLimitExceeded
 from pydantic_ai.usage import UsageLimits
@@ -6,7 +5,6 @@ from pydantic_ai.models.anthropic import AnthropicModel
 from pydantic_ai.mcp import MCPServerStdio
 
 from videojungle import ApiClient
-
 
 from pydantic import BaseModel, Field
 from typing import List
@@ -163,7 +161,7 @@ async def main():
                                       )#usage_limits=UsageLimits(request_limit=3))
     print(result)
     # below is not necessary because open the edit in the browser is default behavior
-    #vj.edits.open_in_browser(project.id, result.output.edit_id)
+    vj.edits.open_in_browser(project.id, result.output.edit_id)
 
 if __name__ == "__main__":
     import asyncio
