@@ -1,5 +1,7 @@
 
 from pydantic_ai import Agent
+from pydantic_ai.exceptions import UsageLimitExceeded
+from pydantic_ai.usage import UsageLimits
 from pydantic_ai.models.anthropic import AnthropicModel
 from pydantic_ai.mcp import MCPServerStdio
 
@@ -27,7 +29,7 @@ vj_server = MCPServerStdio(
     'uvx',
     args=[
         '-p', '3.11',
-        '--from', 'video_editor_mcp@latest',
+        '--from', 'video_editor_mcp@0.1.24',
         'video-editor-mcp'
     ],
     env={
@@ -77,21 +79,36 @@ class VideoList(BaseModel):
         """Return the number of videos"""
         return len(self.videos)
 
+class VideoEdit(BaseModel):
+    project_id: str
+    edit_id: str
+
 model = AnthropicModel("claude-3-7-sonnet-20250219")
 
-agent = Agent(  
+edit_agent = Agent(
     model=model,
     system_prompt='You are an expert video editor. ' \
-    'You can answer questions, download and analyze videos, and create rough video edits using remote videos.',  
+    'You can answer questions, download and analyze videos, and create rough video edits using a mix of projects and remote videos.' \
+    'By default, if a project id is provided, you will use ONLY the assets in that project to create the edit. If no project id is provided,'
+    'you will create a new project, and search videofiles to create an edit instead. For video assets in a project, you will use the type "user" instead of "videofile".',
+    mcp_servers=[vj_server],
+    output_type=VideoEdit,
+    instrument=True,
+)
+search_agent = Agent(  
+    model=model,
+    system_prompt='You are an expert video sourcer. You find the best source videos for a given topic.', 
     mcp_servers=[vj_server, serper_server],
     output_type=VideoList,
     instrument=True,
 )
 
 async def main():
-    async with agent.run_mcp_servers():
+    async with search_agent.run_mcp_servers():
         print("Search Agent is running")
-        result = await agent.run("can you search the web for the newest clips about nathan fielder? I'd like a list of 5 urls with video clips")
+        result = await search_agent.run("can you search the web for the newest clips about nathan fielder? I'd like a list of 5 urls with video clips",
+                                        usage_limits=UsageLimits(request_limit=5))
+        
     print(result)
     print("Creating a Video Jungle project with the found videos")
     project = vj.projects.create("Nathan Fielder Clips", description="Pydantic Agent Nathan Fielder Clips")
@@ -137,12 +154,13 @@ async def main():
         print(f"Failed to process {len(failed_videos)} videos: {', '.join(failed_videos)}")
 
     # Next we can use the project info to generate a rough cut
-    async with agent.run_mcp_servers():
+    async with edit_agent.run_mcp_servers():
         print("Video Editing Agent is now running")
-        result = await agent.run(f"can you use the video assets in the project_id '{project.id}' to create a rough cut edit of all the videos? be sure to not render the final video, just create the edit")
+        result = await edit_agent.run(f"can you use the video assets in the project_id '{project.id}' to create a single edit incorporating all the videos? be sure to not render the final video, just create the edit",
+                                      )#usage_limits=UsageLimits(request_limit=3))
     print(result)
-    print("Rough cut created successfully")
-    
+    vj.edits.open_in_browser(project.id, result.output.edit_id)
+
 if __name__ == "__main__":
     import asyncio
     asyncio.run(main())
