@@ -6,6 +6,8 @@ from pydantic_ai.models.anthropic import AnthropicModel
 from pydantic_ai.mcp import MCPServerStdio
 
 from videojungle import ApiClient
+from agentuity import AgentRequest, AgentResponse, AgentContext
+
 from pydantic import BaseModel, Field
 from typing import List
 from utils.tools import download, extract_info
@@ -160,6 +162,66 @@ async def main():
                                       )#usage_limits=UsageLimits(request_limit=3))
     print(result)
     vj.edits.open_in_browser(project.id, result.output.edit_id)
+
+async def run(request: AgentRequest, response: AgentResponse, context: AgentContext):
+    user_query = await request.data.text()
+
+    async with search_agent.run_mcp_servers():
+        print("Search Agent is running")
+        result = await search_agent.run(f"can you search the web for the newest clips about {user_query}? I'd like a list of 5 urls with video clips",
+                                        usage_limits=UsageLimits(request_limit=5))
+        
+    print(result)
+    print("Creating a Video Jungle project with the found videos")
+    project = vj.projects.create("Nathan Fielder Clips", description="Pydantic Agent Nathan Fielder Clips")
+
+    successful_videos = 0
+    failed_videos = []
+
+    for video in result.output.videos:
+        print(f"Processing video - Title: {video.title}, URL: {video.url}")
+        # Create a safe filename by replacing problematic characters
+        safe_title = video.title.replace('/', '-').replace('\\', '-')
+        output_filename = f"{safe_title}.mp4"
+
+        try:
+            # Try to download the video
+            print(f"Downloading {video.title}...")
+            download_result = download(video.url, output_path=output_filename, format="best")
+
+            # Check if file exists before uploading
+            if os.path.exists(output_filename):
+                print(f"Upload to Video Jungle: {video.title}")
+                vj.assets.upload_asset(
+                    name=video.title,
+                    description=f"{video.title}",
+                    project_id=project.id,
+                    filename=output_filename,
+                )
+                successful_videos += 1
+                # Optionally, you can delete the local file after uploading
+                os.remove(output_filename)
+            else:
+                print(f"Error: Download failed or file not found for {video.title}")
+                failed_videos.append(video.title)
+
+        except Exception as e:
+            print(f"Error processing {video.title}: {e}")
+            failed_videos.append(video.title)
+            continue  # Skip to the next video
+
+    # Summary
+    print(f"\nSummary: Successfully processed {successful_videos} videos")
+    if failed_videos:
+        print(f"Failed to process {len(failed_videos)} videos: {', '.join(failed_videos)}")
+
+    # Next we can use the project info to generate a rough cut
+    async with edit_agent.run_mcp_servers():
+        print("Video Editing Agent is now running")
+        result = await edit_agent.run(f"can you use the video assets in the project_id '{project.id}' to create a single edit incorporating all the videos? be sure to not render the final video, just create the edit",
+                                      )#usage_limits=UsageLimits(request_limit=3))
+    return response.json(result.output.model_dump())
+
 
 if __name__ == "__main__":
     import asyncio
