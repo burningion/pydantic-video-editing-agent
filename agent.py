@@ -145,7 +145,11 @@ async def main():
                 failed_videos.append(video.title)
 
         except Exception as e:
-            print(f"Error processing {video.title}: {e}")
+            # Only print error message if it's not empty
+            if str(e):
+                print(f"Error processing {video.title}: {e}")
+            else:
+                print(f"Error processing {video.title}")
             failed_videos.append(video.title)
             continue  # Skip to the next video
 
@@ -153,15 +157,15 @@ async def main():
     print(f"\nSummary: Successfully processed {successful_videos} videos")
     if failed_videos:
         print(f"Failed to process {len(failed_videos)} videos: {', '.join(failed_videos)}")
-    time.sleep(10) # wait for analysis to finish
+    time.sleep(45) # wait 45 seconds for analysis to finish (we'll make this precise later)
     # Next we can use the project info to generate a rough cut
     async with edit_agent.run_mcp_servers():
         print("Video Editing Agent is now running")
-        result = await edit_agent.run(f"can you use the video assets in the project_id '{project.id}' to create a single edit incorporating all the videos? be sure to not render the final video, just create the edit. if any outdoor scenes, show them first.",
-                                      )#usage_limits=UsageLimits(request_limit=3))
-    print(result)
+        result = await edit_agent.run(f"can you use the video assets in the project_id '{project.id}' to create a single edit incorporating all the assets that are videos in there? be sure to not render the final video, just create the edit. if any outdoor scenes, show them first. also, only use the assets in the project in the edit. you should grab one asset at a time, and use multiple requests from the get-project-assets tool if you use it.",
+                                      usage_limits=UsageLimits(request_limit=8))
+    print(f"result is: {result} and {result.output.edit_id}")
     # below is not necessary because open the edit in the browser is default behavior
-    vj.edits.open_in_browser(project.id, result.output.edit_id)
+    # vj.edits.open_in_browser(project.id, result.output.edit_id)
 
 if __name__ == "__main__":
     import asyncio
