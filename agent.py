@@ -131,10 +131,9 @@ async def main():
             # Check if file exists before uploading
             if os.path.exists(output_filename):
                 print(f"Upload to Video Jungle: {video.title}")
-                vj.assets.upload_asset(
+                project.upload_asset(
                     name=video.title,
-                    description=f"{video.title}",
-                    project_id=project.id,
+                    description=f"Agent downloaded video: {video.title}",
                     filename=output_filename,
                 )
                 successful_videos += 1
@@ -161,9 +160,14 @@ async def main():
     # Next we can use the project info to generate a rough cut
     async with edit_agent.run_mcp_servers():
         print("Video Editing Agent is now running")
-        result = await edit_agent.run(f"can you use the video assets in the project_id '{project.id}' to create a single edit incorporating all the assets that are videos in there? be sure to not render the final video, just create the edit. if any outdoor scenes, show them first. also, only use the assets in the project in the edit. you should grab one asset at a time, and use multiple requests from the get-project-assets tool if you use it.",
+        result = await edit_agent.run(f"""can you use the video assets in the project_id '{project.id}' to create a
+                                      single edit incorporating all the assets that are videos in there? 
+                                      be sure to not render the final video, just create the edit. if any outdoor scenes,
+                                      show them first. also, only use the assets in the project in the edit. you should grab 
+                                      two asset's info from the project at a time, and use multiple requests from the get-project-assets 
+                                      tool if you use it.""",
                                       usage_limits=UsageLimits(request_limit=8))
-    print(f"result is: {result} and {result.output.edit_id}")
+    print(f"resultant project is: {result.output.project_id} and {result.output.edit_id}")
     # below is not necessary because open the edit in the browser is default behavior
     # vj.edits.open_in_browser(project.id, result.output.edit_id)
 
