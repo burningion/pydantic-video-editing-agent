@@ -1,5 +1,7 @@
 # Pydantic Nathan Fielder Video Editing Agent
 
+Click below to watch the repo in action on YouTube:
+
 [![Video Editing Agent Video](./assets/video-thumbnail.png)](https://www.youtube.com/watch?v=C-ewKa3NcZI)
 
 You'll need a [Video Jungle API key](https://app.video-jungle.com/profile/settings), set as `VJ_API_KEY`, and an Anthropic API key. 
