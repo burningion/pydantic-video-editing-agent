@@ -2000,7 +2000,7 @@ dev = [
 requires-dist = [
     { name = "agentuity", specifier = ">=0.0.83" },
     { name = "pydantic-ai", extras = ["logfire", "mcp"], specifier = ">=0.1.9" },
-    { name = "videojungle", specifier = ">=0.1.59" },
+    { name = "videojungle", specifier = ">=0.1.60" },
     { name = "yt-dlp", extras = ["curl-cffi", "default"], specifier = ">=2025.4.30" },
 ]
 
@@ -2009,16 +2009,16 @@ dev = [{ name = "ipython", specifier = ">=9.2.0" }]
 
 [[package]]
 name = "videojungle"
-version = "0.1.59"
+version = "0.1.60"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "httpx" },
     { name = "pydantic" },
     { name = "requests" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/8e/9f/4494d3217358a35e753e0369300f11ee680be67c935c0bc2c0c04f4019f2/videojungle-0.1.59.tar.gz", hash = "sha256:5c61010a591d63391bf2308a7a906642d052c7f6f417013ea0f3516d2520ddb2", size = 11395, upload-time = "2025-05-13T01:37:00.874Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/4d/06/fc1fcae6e8cd8601791547df70c5219b05618c106bb8ed281ede2077eff4/videojungle-0.1.60.tar.gz", hash = "sha256:3bcb453ab71f7f201e2bc3cf960f0b1407a27c3cd5b80e6ce7473ded1e073997", size = 12489, upload-time = "2025-05-15T15:02:55.971Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/31/b5/d13e8e580c195d4aea0afd19616d043ec3bc04948c498f158b1f08d9b534/videojungle-0.1.59-py3-none-any.whl", hash = "sha256:e7411e465500c595243f783de638c8446edbe0ed07f91951d4154fa7d144b922", size = 11139, upload-time = "2025-05-13T01:36:59.162Z" },
+    { url = "https://files.pythonhosted.org/packages/b3/b9/68c650b7ef77d4d16f67915e6873151fd579b1506081e2d2abbe1b3b9720/videojungle-0.1.60-py3-none-any.whl", hash = "sha256:5a84ace6b4326d8b6708f98159687fa97764bcb7db64e02ab53f1752eadba746", size = 12278, upload-time = "2025-05-15T15:02:54.877Z" },
 ]
 
 [[package]]
