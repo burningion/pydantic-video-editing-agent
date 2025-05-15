@@ -4,7 +4,7 @@ Click below to watch the repo in action on YouTube:
 
 [![Video Editing Agent Video](./assets/video-thumbnail.png)](https://www.youtube.com/watch?v=C-ewKa3NcZI)
 
-You'll need a [Video Jungle API key](https://app.video-jungle.com/profile/settings), set as `VJ_API_KEY`, and an Anthropic API key. 
+You'll need a [Video Jungle API key](https://app.video-jungle.com/profile/settings), set as `VJ_API_KEY`, an Anthropic API key, and a [Serper API Key](https://serper.dev/), set as `SERPER_API_KEY`.
 
 You can then git clone this repo, followed by a `uv sync`.
 
@@ -12,17 +12,24 @@ You can then git clone this repo, followed by a `uv sync`.
 
 ![Video Editing Agent](./assets/pydantic-agent.png)
 
-For this Agent you'll also need a [Serper API Key](https://serper.dev/), set as `SERPER_API_KEY`
+This Agent project runs on [uv](https://docs.astral.sh/uv/getting-started/installation/) to manage dependencies. (It's great!)
+
+For this Agent, you can then do a:
 
 ```
+uv sync
 uv run agent.py
 ```
 
-This will search for the latest Nathan Fielder videos, download them to your computer, and then upload them to Video Jungle for analysis in a new project.
+The first command will install dependencies, the second runs the agents.
 
-It will then use this analysis to create a new video edit for you.
+The first Agent will search for the latest Nathan Fielder videos, download them to your computer, create a new Video Jungle project, and then upload them to Video Jungle for analysis in a new project.
+
+It will then use this analysis and project to create a new video edit for you using a Video Editing Agent.
 
 ## Search and Query Video Files Agent 
+
+The other example in this project searches through your Video Files on Video Jungle.
 
 ```
 uv run search.py
@@ -85,3 +92,7 @@ These videos represent a mix of professional competition footage, personal skate
 You can then view the Agent's activities in Logfire:
 
 ![Logfire backend](./assets/logfire.png)
+
+## What's Next
+
+Next I'll show how to incorporate generative video assets in order to create unique edits on demand, from remotely called Agents.
