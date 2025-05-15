@@ -117,10 +117,7 @@ class YtDlpImpersonator:
                     return None
                 else:
                     return ydl.extract_info(url, download=False)
-        except Exception as e:
-            # Only print error message if it's not empty
-            if str(e):
-                print(f"Error: {e}")
+        except Exception:
             # Fall back to command-line approach if API approach fails
             return self._fallback_download(url, output_path, format, download, **extra_opts)
     
