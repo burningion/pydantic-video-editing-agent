@@ -1,5 +1,4 @@
 from pydantic_ai import Agent
-from pydantic_ai.exceptions import UsageLimitExceeded
 from pydantic_ai.usage import UsageLimits
 from pydantic_ai.models.anthropic import AnthropicModel
 from pydantic_ai.mcp import MCPServerStdio
@@ -55,30 +54,6 @@ class VideoItem(BaseModel):
 
 class VideoList(BaseModel):
     videos: List[VideoItem] = Field(default_factory=list)
-    
-    def __init__(self, **data):
-        # Handle the case where a single video is passed instead of a list
-        if 'url' in data and 'title' in data:
-            # If individual url/title fields are provided, convert to a list with one item
-            videos_data = [{'url': data.pop('url'), 'title': data.pop('title')}]
-            data['videos'] = videos_data
-        super().__init__(**data)
-    
-    def add_video(self, url: str, title: str):
-        """Add a video to the list"""
-        self.videos.append(VideoItem(url=url, title=title))
-    
-    def __iter__(self):
-        """Make the VideoList iterable"""
-        return iter(self.videos)
-    
-    def __getitem__(self, index):
-        """Allow indexing into the VideoList"""
-        return self.videos[index]
-    
-    def __len__(self):
-        """Return the number of videos"""
-        return len(self.videos)
 
 class VideoEdit(BaseModel):
     project_id: str
@@ -107,7 +82,7 @@ search_agent = Agent(
 async def main():
     async with search_agent.run_mcp_servers():
         print("Search Agent is running")
-        result = await search_agent.run("can you search the web for the newest clips about nathan fielder? I'd like a list of 5 urls with video clips. it's may 13, 2025 by the way, and nathan is doing a show called 'the rehearsal'.",
+        result = await search_agent.run("can you search the web for the newest clips about nathan fielder? I'd like a list of 5 urls with video clips. it's may 15, 2025 by the way, and nathan is doing a show called 'the rehearsal'.",
                                         usage_limits=UsageLimits(request_limit=5))
         
     print(result)
@@ -162,7 +137,7 @@ async def main():
         print("Video Editing Agent is now running")
         result = await edit_agent.run(f"""can you use the video assets in the project_id '{project.id}' to create a
                                       single edit incorporating all the assets that are videos in there? 
-                                      be sure to not render the final video, just create the edit. if any outdoor scenes,
+                                      be sure to not render the final video, just create the edit. if there are any outdoor scenes,
                                       show them first. also, only use the assets in the project in the edit. you should grab 
                                       two asset's info from the project at a time, and use multiple requests from the get-project-assets 
                                       tool if you use it.""",
