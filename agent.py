@@ -82,8 +82,8 @@ search_agent = Agent(
 async def main():
     async with search_agent.run_mcp_servers():
         print("Search Agent is running")
-        result = await search_agent.run("can you search the web for the newest clips about nathan fielder? I'd like a list of 5 urls with video clips. it's may 15, 2025 by the way, and nathan is doing a show called 'the rehearsal'.",
-                                        usage_limits=UsageLimits(request_limit=5))
+        result = await search_agent.run("can you search the web for the newest clips about nathan fielder? I'd like a list of 5 urls with video clips. it's may 21, 2025 by the way, and nathan is doing a show called 'the rehearsal'.",
+                                        usage_limits=UsageLimits(request_limit=7))
         
     print(result)
     print("Creating a Video Jungle project with the found videos")

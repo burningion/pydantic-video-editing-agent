@@ -60,7 +60,7 @@ class VideoEdit(BaseModel):
     project_id: str
     edit_id: str
 
-model = GeminiModel("gemini-2.5-flash-preview-05-20")
+model = GeminiModel("gemini-2.5-pro-preview-05-06")
 #model = AnthropicModel("claude-3-7-sonnet-20250219")
 
 edit_agent = Agent(
