@@ -60,7 +60,10 @@ class VideoEdit(BaseModel):
     project_id: str
     edit_id: str
 
-model = GeminiModel("gemini-2.5-pro-preview-05-06")
+# for flash preview
+model = GeminiModel("gemini-2.5-flash-preview-05-20")
+# for pro preview
+#model = GeminiModel("gemini-2.5-pro-preview-05-06")
 #model = AnthropicModel("claude-3-7-sonnet-20250219")
 
 edit_agent = Agent(
@@ -142,7 +145,7 @@ async def main():
                                       be sure to not render the final video, just create the edit. if there are any outdoor scenes,
                                       show them first. also, only use the assets in the project in the edit. you should grab 
                                       two asset's info from the project at a time, and use multiple requests from the get-project-assets 
-                                      tool if you use it.""",
+                                      tool if you use it if necessary. only show each video once in the edit.""",
                                       usage_limits=UsageLimits(request_limit=8))
     print(f"resultant project is: {result.output.project_id} and {result.output.edit_id}")
     # below is not necessary because open the edit in the browser is default behavior
