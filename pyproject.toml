@@ -7,8 +7,8 @@ requires-python = ">=3.11"
 dependencies = [
     "agentuity>=0.0.83",
     "click>=8.1.8",
-    "instructor[anthropic]>=0.6.7",
-    "pydantic-ai[logfire,mcp]>=0.2.6",
+    "instructor>=1.8.3",
+    "pydantic-ai[logfire,mcp]>=0.2.9",
     "videojungle>=0.1.64",
     "yt-dlp[curl-cffi,default]>=2025.5.22",
 ]

@@ -172,57 +172,86 @@ async def async_main(project_id: Optional[str] = None):
         print(f"Project name: {project.name}")
     else:
         # Create new project with videos
-        async with search_agent.run_mcp_servers():
-            print("Search Agent is running")
-            result = await search_agent.run("can you search the web for the newest clips about nathan fielder? I'd like a list of 5 urls with video clips. it's may 15, 2025 by the way, and nathan is doing a show called 'the rehearsal'.",
-                                            usage_limits=UsageLimits(request_limit=5))
-            
-        print(result)
         print("Creating a Video Jungle project with the found videos")
         project = vj.projects.create("Nathan Fielder Clips", description="Pydantic Agent Nathan Fielder Clips")
 
         successful_videos = 0
         failed_videos = []
+        processed_urls = set()  # Keep track of URLs we've already tried
+        search_attempts = 0
+        max_search_attempts = 5  # Maximum number of search attempts
+        
+        while successful_videos < 5 and search_attempts < max_search_attempts:
+            search_attempts += 1
+            
+            # Request more videos than needed to account for failures
+            videos_to_request = 8 if search_attempts == 1 else 10
+            
+            async with search_agent.run_mcp_servers():
+                print(f"\nSearch attempt {search_attempts}: Searching for Nathan Fielder clips...")
+                search_query = f"can you search the web for the newest clips about nathan fielder? I'd like a list of {videos_to_request} urls with video clips. it's may 15, 2025 by the way, and nathan is doing a show called 'the rehearsal'."
+                if search_attempts > 1:
+                    search_query += " Please find different clips than before."
+                
+                result = await search_agent.run(search_query, usage_limits=UsageLimits(request_limit=5))
+            
+            print(f"Found {len(result.output.videos)} videos in search attempt {search_attempts}")
+            
+            for video in result.output.videos:
+                # Skip if we've already tried this URL
+                if video.url in processed_urls:
+                    print(f"Skipping already processed URL: {video.url}")
+                    continue
+                
+                processed_urls.add(video.url)
+                
+                # Stop if we have enough videos
+                if successful_videos >= 5:
+                    break
+                
+                print(f"Processing video - Title: {video.title}, URL: {video.url}")
+                # Create a safe filename by replacing problematic characters
+                safe_title = video.title.replace('/', '-').replace('\\', '-')
+                output_filename = f"{safe_title}.mp4"
 
-        for video in result.output.videos:
-            print(f"Processing video - Title: {video.title}, URL: {video.url}")
-            # Create a safe filename by replacing problematic characters
-            safe_title = video.title.replace('/', '-').replace('\\', '-')
-            output_filename = f"{safe_title}.mp4"
+                try:
+                    # Try to download the video
+                    print(f"Downloading {video.title}...")
+                    download_result = download(video.url, output_path=output_filename, format="best")
 
-            try:
-                # Try to download the video
-                print(f"Downloading {video.title}...")
-                download_result = download(video.url, output_path=output_filename, format="best")
+                    # Check if file exists before uploading
+                    if os.path.exists(output_filename):
+                        print(f"Upload to Video Jungle: {video.title}")
+                        project.upload_asset(
+                            name=video.title,
+                            description=f"Agent downloaded video: {video.title}",
+                            filename=output_filename,
+                        )
+                        successful_videos += 1
+                        print(f"Successfully uploaded video {successful_videos}/5")
+                        # Optionally, you can delete the local file after uploading
+                        os.remove(output_filename)
+                    else:
+                        print(f"Error: Download failed or file not found for {video.title}")
+                        failed_videos.append(video.title)
 
-                # Check if file exists before uploading
-                if os.path.exists(output_filename):
-                    print(f"Upload to Video Jungle: {video.title}")
-                    project.upload_asset(
-                        name=video.title,
-                        description=f"Agent downloaded video: {video.title}",
-                        filename=output_filename,
-                    )
-                    successful_videos += 1
-                    # Optionally, you can delete the local file after uploading
-                    os.remove(output_filename)
-                else:
-                    print(f"Error: Download failed or file not found for {video.title}")
+                except Exception as e:
+                    # Only print error message if it's not empty
+                    if str(e):
+                        print(f"Error processing {video.title}: {e}")
+                    else:
+                        print(f"Error processing {video.title}")
                     failed_videos.append(video.title)
-
-            except Exception as e:
-                # Only print error message if it's not empty
-                if str(e):
-                    print(f"Error processing {video.title}: {e}")
-                else:
-                    print(f"Error processing {video.title}")
-                failed_videos.append(video.title)
-                continue  # Skip to the next video
+                    continue  # Skip to the next video
 
         # Summary
-        print(f"\nSummary: Successfully processed {successful_videos} videos")
+        print(f"\nFinal Summary: Successfully processed {successful_videos} videos after {search_attempts} search attempts")
         if failed_videos:
             print(f"Failed to process {len(failed_videos)} videos: {', '.join(failed_videos)}")
+        
+        if successful_videos < 5:
+            print(f"\nWarning: Only managed to download {successful_videos} videos after {search_attempts} attempts")
+        
         time.sleep(45) # wait 45 seconds for analysis to finish (we'll make this precise later)
     # Next we can use the project info to generate a rough cut
     audio_asset_id = search_and_render_audio()
