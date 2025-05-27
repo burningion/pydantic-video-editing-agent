@@ -137,7 +137,7 @@ def search_and_render_audio():
                                 parameters={"clip topic": topic,
                                             "latest episode topic": resp.latest_episode_topic})
     print(f"Generated voiceover from topics with asset id: {audio['asset_id']}")
-    return audio['asset_id']
+    return (project.id, audio['asset_id'])
 
 # for flash preview
 cheap_model = GeminiModel("gemini-2.5-flash-preview-05-20")
@@ -166,21 +166,20 @@ search_agent = Agent(
 async def async_main(project_id: Optional[str] = None):
     
     if project_id:
-        # Use existing project
+        # Use existing project TODO: not implemented yet
         print(f"Using existing project ID: {project_id}")
         project = vj.projects.get(project_id)
         print(f"Project name: {project.name}")
     else:
         # Create new project with videos
-        print("Creating a Video Jungle project with the found videos")
-        project = vj.projects.create("Nathan Fielder Clips", description="Pydantic Agent Nathan Fielder Clips")
 
         successful_videos = 0
         failed_videos = []
         processed_urls = set()  # Keep track of URLs we've already tried
         search_attempts = 0
         max_search_attempts = 5  # Maximum number of search attempts
-        
+        project_id, audio_asset_id = search_and_render_audio()
+        project = vj.projects.get(project_id)
         while successful_videos < 5 and search_attempts < max_search_attempts:
             search_attempts += 1
             
@@ -254,7 +253,7 @@ async def async_main(project_id: Optional[str] = None):
         
         time.sleep(45) # wait 45 seconds for analysis to finish (we'll make this precise later)
     # Next we can use the project info to generate a rough cut
-    audio_asset_id = search_and_render_audio()
+    
     async with edit_agent.run_mcp_servers():
         print("Video Editing Agent is now running")
         result = await edit_agent.run(f"""can you use the video assets in the project_id '{project.id}' to create a
