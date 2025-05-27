@@ -140,13 +140,13 @@ def search_and_render_audio():
     return audio['asset_id']
 
 # for flash preview
-model = GeminiModel("gemini-2.5-flash-preview-05-20")
+cheap_model = GeminiModel("gemini-2.5-flash-preview-05-20")
 # for pro preview
 #model = GeminiModel("gemini-2.5-pro-preview-05-06")
-#model = AnthropicModel("claude-3-7-sonnet-20250219")
+good_model = AnthropicModel("claude-sonnet-4-20250514")
 
 edit_agent = Agent(
-    model=model,
+    model=good_model,
     system_prompt='You are an expert video editor. ' \
     'You can answer questions, download and analyze videos, and create rough video edits using a mix of projects and remote videos.' \
     'By default, if a project id is provided, you will use ONLY the assets in that project to create the edit. If no project id is provided,'
@@ -156,7 +156,7 @@ edit_agent = Agent(
     instrument=True,
 )
 search_agent = Agent(  
-    model=model,
+    model=cheap_model,
     system_prompt='You are an expert video sourcer. You find the best source videos for a given topic.', 
     mcp_servers=[vj_server, serper_server],
     output_type=VideoList,
@@ -262,7 +262,9 @@ async def async_main(project_id: Optional[str] = None):
                                       be sure to not render the final video, just create the edit. if there are any outdoor scenes,
                                       show them first. also, only use the assets in the project in the edit. you should grab 
                                       two asset's info from the project at a time, and use multiple requests from the get-project-assets 
-                                      tool if you use it if necessary. only show each video once in the edit.""",
+                                      tool if you use it if necessary. only show each video once in the edit. remember, each asset in the edit should have a start_time and an end_time,
+                                      and the total duration of these start_time and stop_time in the edit should be around 60 seconds, the exact same duration as the voiceover.
+                                      think hard about when to start and stop each video asset in the edit, and how to make it flow well with the voiceover.""",
                                       usage_limits=UsageLimits(request_limit=8))
     print(f"resultant project is: {result.output.project_id} and {result.output.edit_id}")
     # below is not necessary because open the edit in the browser is default behavior
