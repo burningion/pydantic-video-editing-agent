@@ -36,7 +36,7 @@ vj_server = MCPServerStdio(
     'uvx',
     args=[
         '-p', '3.11',
-        '--from', 'video_editor_mcp@0.1.30',
+        '--from', 'video_editor_mcp@0.1.31',
         'video-editor-mcp'
     ],
     env={
@@ -256,13 +256,14 @@ async def async_main(project_id: Optional[str] = None):
     
     async with edit_agent.run_mcp_servers():
         print("Video Editing Agent is now running")
+        asset = vj.assets.get(audio_asset_id)
         result = await edit_agent.run(f"""can you use the video assets in the project_id '{project.id}' to create a
                                       single edit incorporating all the assets that are videos in there? use the audio asset with id '{audio_asset_id}' as the voiceover for the edit.
                                       be sure to not render the final video, just create the edit. if there are any outdoor scenes,
                                       show them first. also, only use the assets in the project in the edit. you should grab 
                                       two asset's info from the project at a time, and use multiple requests from the get-project-assets 
-                                      tool if you use it if necessary. only show each video once in the edit. remember, each asset in the edit should have a start_time and an end_time,
-                                      and the total duration of these start_time and stop_time in the edit should be around 60 seconds, the exact same duration as the voiceover.
+                                      tool if you use it if necessary. only show each video once in the edit. remember, each asset in the edit should have a start_time and an end_time where something interesting happens,
+                                      and the total duration of these start_time and stop_time added together for the video edits should be around 60 seconds, the exact same duration as the voiceover.
                                       think hard about when to start and stop each video asset in the edit, and how to make it flow well with the voiceover.""",
                                       usage_limits=UsageLimits(request_limit=8))
     print(f"resultant project is: {result.output.project_id} and {result.output.edit_id}")

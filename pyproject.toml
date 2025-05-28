@@ -9,7 +9,7 @@ dependencies = [
     "click>=8.1.8",
     "instructor>=1.8.3",
     "pydantic-ai[logfire,mcp]>=0.2.9",
-    "videojungle>=0.1.64",
+    "videojungle>=0.1.66",
     "yt-dlp[curl-cffi,default]>=2025.5.22",
 ]
 

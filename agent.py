@@ -29,7 +29,7 @@ vj_server = MCPServerStdio(
     'uvx',
     args=[
         '-p', '3.11',
-        '--from', 'video_editor_mcp@0.1.30',
+        '--from', 'video_editor_mcp@0.1.31',
         'video-editor-mcp'
     ],
     env={
