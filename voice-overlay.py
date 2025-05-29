@@ -173,7 +173,7 @@ async def async_main(project_id: Optional[str] = None):
         async with edit_agent.run_mcp_servers():
             print("Video Editing Agent is now running")
             result = await edit_agent.run(f"""can you use the video assets in the project_id '{project.id}' to create a
-                                        single edit incorporating all the assets that are videos in there? use the generated audio asset as the voiceover for the edit.
+                                        single edit incorporating all the assets that are videos in there? use the audio asset as the voiceover for the edit.
                                         be sure to not render the final video, just create the edit. if there are any outdoor scenes,
                                         show them first. also, only use the assets in the project in the edit. you should grab 
                                         two asset's info from the project at a time, and use multiple requests from the get-project-assets 
