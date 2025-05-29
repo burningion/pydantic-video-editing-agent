@@ -8,6 +8,20 @@ You'll need a [Video Jungle API key](https://app.video-jungle.com/profile/settin
 
 You can then git clone this repo, followed by a `uv sync`.
 
+## Search, Edit, and Generate Voiceover Agent
+
+![Voice over video editing Agent](./assets/pydantic-voiceover-agent.png)
+
+This agent project will first use web search with Anthropic's new web search tool, to find the latest information on Nathan Fielder's The Rehearsal.
+
+It will try to come up with 5 ideas for topics to talk about latest episode of the show.
+
+From there, we create a Video Jungle project with a `prompt-to-speech` asset generator. This will create a prompt to allow us to pass in our created topics, and come up with a voiceover narration on demand to accompany our videos.
+
+Next, we search the web for source video clips from the show, download them, and add them to the same project for analysis and retrieval.
+
+From there, we prompt for our edit! We get back a video edit right in the browser, with our voice over and analysis from the latest episode.
+
 ## Search and Edit Video Agent
 
 ![Video Editing Agent](./assets/pydantic-agent.png)

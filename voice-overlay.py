@@ -6,12 +6,11 @@ from pydantic_ai.mcp import MCPServerStdio
 
 from videojungle import ApiClient
 
-from typing import List
+from typing import List, Optional
 import instructor
 from anthropic import Anthropic # Assumes you've set your API key as an environment variable
 
 from pydantic import BaseModel, Field
-from typing import List, Optional
 from utils.tools import download 
 import logfire
 import os
@@ -178,8 +177,9 @@ async def async_main(project_id: Optional[str] = None):
                                         show them first. also, only use the assets in the project in the edit. you should grab 
                                         two asset's info from the project at a time, and use multiple requests from the get-project-assets 
                                         tool if you use it if necessary. only show each video once in the edit. remember, each asset in the edit should have a start_time and an end_time where something interesting happens,
-                                        and the total duration of these start_time and stop_time added together for the video edits should be around 60 seconds, the exact same duration as the voiceover.
-                                        think hard about when to start and stop each video asset in the edit, and how to make it flow well with the voiceover. MAKE SURE TO DOUBLE CHECK THAT THE TOTAL DURATION OF THE VIDEO EDIT IS THE SAME AS THE VOICEOVER DURATION.""",
+                                        and the total duration of these start_time and stop_time added together for the video edits should be around 60 seconds, but the exact same duration as the voiceover.
+                                        think hard about when to start and stop each video asset in the edit, and how to make it flow well with the voiceover. MAKE SURE TO DOUBLE CHECK THAT THE TOTAL DURATION OF THE VIDEO EDIT IS THE SAME AS THE VOICEOVER DURATION.
+                                        remember, you MUST use the AUDIO asset in the project as the voiceover for the edit, and you can UPDATE the EDIT if you need to.""",
                                         usage_limits=UsageLimits(request_limit=10))
         print(f"resultant project is: {result.output.project_id} and {result.output.edit_id}")
         return
@@ -229,7 +229,7 @@ async def async_main(project_id: Optional[str] = None):
                 try:
                     # Try to download the video
                     print(f"Downloading {video.title}...")
-                    download_result = download(video.url, output_path=output_filename, format="best")
+                    download(video.url, output_path=output_filename, format="best")
 
                     # Check if file exists before uploading
                     if os.path.exists(output_filename):
@@ -277,7 +277,8 @@ async def async_main(project_id: Optional[str] = None):
                                       two asset's info from the project at a time, and use multiple requests from the get-project-assets 
                                       tool if you use it if necessary. only show each video once in the edit. remember, each asset in the edit should have a start_time and an end_time where something interesting happens,
                                       and the total duration of these start_time and stop_time added together for the video edits should be around 60 seconds, the exact same duration as the voiceover.
-                                      think hard about when to start and stop each video asset in the edit, and how to make it flow well with the voiceover. MAKE SURE TO DOUBLE CHECK THAT THE TOTAL DURATION OF THE VIDEO EDIT IS THE SAME AS THE VOICEOVER DURATION.""",
+                                      think hard about when to start and stop each video asset in the edit, and how to make it flow well with the voiceover. MAKE SURE TO DOUBLE CHECK THAT THE TOTAL DURATION OF THE VIDEO EDIT IS THE SAME AS THE VOICEOVER DURATION.
+                                      remember, you MUST use the AUDIO asset in the project as the voiceover for the edit, and you can UPDATE the EDIT if you need to.""",
                                       usage_limits=UsageLimits(request_limit=8))
     print(f"resultant project is: {result.output.project_id} and {result.output.edit_id}")
     # below is not necessary because open the edit in the browser is default behavior
