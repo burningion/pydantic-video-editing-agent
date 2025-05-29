@@ -12,15 +12,21 @@ You can then git clone this repo, followed by a `uv sync`.
 
 ![Voice over video editing Agent](./assets/pydantic-voiceover-agent.png)
 
-This agent project will first use web search with Anthropic's new web search tool, to find the latest information on Nathan Fielder's The Rehearsal.
+This agent creates a video edit featuring the latest episode of The Rehearsal as a subject, with found media and a voiceover narration created from online discussions.
 
-It will try to come up with 5 ideas for topics to talk about latest episode of the show.
+It first uses web search with Anthropic's [web search tool](https://docs.anthropic.com/en/docs/agents-and-tools/tool-use/web-search-tool), to find the latest information on Nathan Fielder's [The Rehearsal](https://www.hbo.com/the-rehearsal).
 
-From there, we create a Video Jungle project with a `prompt-to-speech` asset generator. This will create a prompt to allow us to pass in our created topics, and come up with a voiceover narration on demand to accompany our videos.
+It will use these results to try to come up with 5 ideas for topics to talk about latest episode of the show.
 
-Next, we search the web for source video clips from the show, download them, and add them to the same project for analysis and retrieval.
+From there, it creates a Video Jungle project with a `prompt-to-speech` asset generator. 
 
-From there, we prompt for our edit! We get back a video edit right in the browser, with our voice over and analysis from the latest episode.
+This will create a custom prompt that allows us to pass in our created topics, and come up with a voiceover narration on demand to accompany our videos.
+
+Next, we search the web to find source video clips about the show, download them, and add them to the same project for analysis and retrieval.
+
+From there, we use the [Video Jungle MCP server](https://github.com/burningion/video-editing-mcp) to prompt for for our edit! 
+
+We get back a video edit right in the browser, with our voice over and analysis from the latest episode.
 
 ## Search and Edit Video Agent
 
