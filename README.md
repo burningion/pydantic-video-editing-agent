@@ -14,6 +14,11 @@ You can then git clone this repo, followed by a `uv sync`.
 
 This agent creates a video edit featuring the latest episode of The Rehearsal as a subject, with found media and a voiceover narration created from online discussions.
 
+```
+uv sync
+uv run voice-overlay.py
+```
+
 It first uses web search with Anthropic's [web search tool](https://docs.anthropic.com/en/docs/agents-and-tools/tool-use/web-search-tool), to find the latest information on Nathan Fielder's [The Rehearsal](https://www.hbo.com/the-rehearsal).
 
 It will use these results to try to come up with 5 ideas for topics to talk about latest episode of the show.
