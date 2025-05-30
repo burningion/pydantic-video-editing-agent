@@ -8,7 +8,7 @@ You'll need a [Video Jungle API key](https://app.video-jungle.com/profile/settin
 
 You can then git clone this repo, followed by a `uv sync`.
 
-## Search, Edit, and Generate Voiceover Agent
+## Search, Edit, and Generate a Voiceover Agent
 
 ![Voice over video editing Agent](./assets/pydantic-voiceover-agent.png)
 
