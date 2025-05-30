@@ -35,7 +35,7 @@ vj_server = MCPServerStdio(
     'uvx',
     args=[
         '-p', '3.11',
-        '--from', 'video_editor_mcp@0.1.32',
+        '--from', 'video_editor_mcp@0.1.33',
         'video-editor-mcp'
     ],
     env={
@@ -118,7 +118,7 @@ def search_and_render_audio():
     script_key = "prompt-to-speech" 
 
     # A prompt is used to describe the generative task you want to perform
-    prompt = vj.prompts.generate(task="You are a Nathan Fielder episode analyzer, picking a meta idea to discuss. You aim for 30 second audio insight clip scripts that are funny and insightful.",
+    prompt = vj.prompts.generate(task="You are a 'The Rehearsal' episode analyzer, diving deep into meta idea to discuss. You aim for 30 second long read script concept that is funny and insightful.",
                                 parameters=["clip topic", "latest episode topic"])
 
     # Now we can create a project to hold our generated media
@@ -163,24 +163,27 @@ search_agent = Agent(
     instrument=True,
 )
 
-async def async_main(project_id: Optional[str] = None):
+async def async_main(project_id: Optional[str] = None, asset_id: Optional[str] = None):
     
     if project_id:
+        
         # Use existing project TODO: not implemented yet
         print(f"Using existing project ID: {project_id}")
         project = vj.projects.get(project_id)
         print(f"Project name: {project.name}")
         async with edit_agent.run_mcp_servers():
+            asset = vj.assets.get(asset_id)
+            asset_length = asset.create_parameters['metadata']['duration_seconds']
             print("Video Editing Agent is now running")
             result = await edit_agent.run(f"""can you use the video assets in the project_id '{project.id}' to create a
-                                        single edit incorporating all the assets that are videos in there? use the audio asset as the voiceover for the edit.
-                                        be sure to not render the final video, just create the edit. if there are any outdoor scenes,
-                                        show them first. also, only use the assets in the project in the edit. you should grab 
-                                        two asset's info from the project at a time, and use multiple requests from the get-project-assets 
-                                        tool if you use it if necessary. only show each video once in the edit. remember, each asset in the edit should have a start_time and an end_time where something interesting happens,
-                                        and the total duration of these start_time and stop_time added together for the video edits should be under 60 seconds, but the exact same duration as the voiceover.
-                                        think hard about when to start and stop each video asset in the edit, and how to make it flow well with the voiceover. MAKE SURE TO DOUBLE CHECK THAT THE TOTAL DURATION OF THE VIDEO EDIT IS THE SAME AS THE VOICEOVER DURATION.
-                                        remember, you MUST use the AUDIO asset in the project as the voiceover for the edit, and you can UPDATE the EDIT if you need to. be sure to set the video asset's audio level to 0 so that the voiceover is the only audio in the edit.""",
+                                      single edit incorporating all the assets that are videos in there? use the audio asset with id '{audio_asset_id}' as the voiceover for the edit. it should have a start time of 0 and an end time of {asset_length} seconds.
+                                      be sure to not render the final video, just create the edit. if there are any outdoor scenes,
+                                      show them first. also, only use the assets in the project in the edit. you should grab 
+                                      two asset's info from the project at a time, and use multiple requests from the get-project-assets 
+                                      tool if you use it if necessary. only show each video once in the edit. remember, each asset in the edit should have a start_time and an end_time where something interesting happens,
+                                      and the total duration of these start_time and stop_time added together for the video edits should match the asset's duration, {asset_length} seconds.
+                                      think hard about when to start and stop each video asset in the edit, and how to make it flow well with the voiceover. MAKE SURE TO DOUBLE CHECK THAT THE TOTAL DURATION OF THE VIDEO EDIT IS THE SAME AS THE VOICEOVER DURATION WHICH IS {asset_length} SECONDS. 
+                                      remember, you MUST use the AUDIO asset in the project as the voiceover for the edit, and you can UPDATE the EDIT if you need to. be sure to set the video asset's audio level to 0 so that the voiceover is the only audio in the edit. """,
                                         usage_limits=UsageLimits(request_limit=10))
         print(f"resultant project is: {result.output.project_id} and {result.output.edit_id}")
         return
@@ -271,25 +274,28 @@ async def async_main(project_id: Optional[str] = None):
     async with edit_agent.run_mcp_servers():
         print("Video Editing Agent is now running")
         asset = vj.assets.get(audio_asset_id)
+        asset_length = asset.create_parameters['metadata']['duration_seconds']
         result = await edit_agent.run(f"""can you use the video assets in the project_id '{project.id}' to create a
-                                      single edit incorporating all the assets that are videos in there? use the audio asset with id '{audio_asset_id}' as the voiceover for the edit.
+                                      single edit incorporating all the assets that are videos in there? use the audio asset with id '{audio_asset_id}' as the voiceover for the edit. it should have a start time of 0 and an end time of {asset_length} seconds.
                                       be sure to not render the final video, just create the edit. if there are any outdoor scenes,
                                       show them first. also, only use the assets in the project in the edit. you should grab 
                                       two asset's info from the project at a time, and use multiple requests from the get-project-assets 
                                       tool if you use it if necessary. only show each video once in the edit. remember, each asset in the edit should have a start_time and an end_time where something interesting happens,
-                                      and the total duration of these start_time and stop_time added together for the video edits should be under 60 seconds, the exact same duration as the voiceover.
-                                      think hard about when to start and stop each video asset in the edit, and how to make it flow well with the voiceover. MAKE SURE TO DOUBLE CHECK THAT THE TOTAL DURATION OF THE VIDEO EDIT IS THE SAME AS THE VOICEOVER DURATION.
-                                      remember, you MUST use the AUDIO asset in the project as the voiceover for the edit, and you can UPDATE the EDIT if you need to. be sure to set the video asset's audio level to 0 so that the voiceover is the only audio in the edit.""",
-                                      usage_limits=UsageLimits(request_limit=8))
+                                      and the total duration of these start_time and stop_time added together for the video edits should match the asset's duration, {asset_length} seconds.
+                                      think hard about when to start and stop each video asset in the edit, and how to make it flow well with the voiceover. MAKE SURE TO DOUBLE CHECK THAT THE TOTAL DURATION OF THE VIDEO EDIT IS THE SAME AS THE VOICEOVER DURATION WHICH IS {asset_length} SECONDS. 
+                                      BE SURE TO SET ALL VIDEO ASSET's audio_level TO 0.1 so that the voiceover is the only audio in the edit. 
+                                      remember, you MUST use the AUDIO asset in the project as the voiceover for the edit, and you can UPDATE the EDIT if you need to. """,
+                                      usage_limits=UsageLimits(request_limit=10))
     print(f"resultant project is: {result.output.project_id} and {result.output.edit_id}")
     # below is not necessary because open the edit in the browser is default behavior
     # vj.edits.open_in_browser(project.id, result.output.edit_id)
 
 @click.command()
 @click.option('--project-id', '-p', help='Existing project ID to use instead of creating a new one')
-def main(project_id: Optional[str] = None):
+@click.option('--asset-id', '-a', help='Audio asset ID to use for the edit')
+def main(project_id: Optional[str] = None, asset_id: Optional[str] = None):
     import asyncio
-    asyncio.run(async_main(project_id))
+    asyncio.run(async_main(project_id, asset_id))
 
 if __name__ == "__main__":
     main()
