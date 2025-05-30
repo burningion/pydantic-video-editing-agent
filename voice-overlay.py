@@ -28,6 +28,7 @@ vj_api_key = os.environ["VJ_API_KEY"]
 serper_api_key = os.environ["SERPER_API_KEY"]
 
 logfire.configure()
+logfire.instrument_openai()
 
 vj = ApiClient(vj_api_key) # video jungle api client
 
@@ -74,9 +75,9 @@ def search_and_render_audio():
     # and generate paramters for our prompt
     workflow_client = Anthropic()
     client = instructor.from_anthropic(workflow_client)  # Initialize the instructor with Anthropic client
-
+    
     search_prompt = """
-    I'm trying to come up with an interesting spoken dialogue prompt about nathan fielder's the rehearsal. 
+    I'm trying to come up with an interesting spoken dialogue prompt about nathan fielder's the rehearsal season 2. 
     can you help me come up with ideas for what might be interesting? you can search the web to get up to date info.
     don't give me a summary of the show, or the show as a topic. instead just give me a list of topics or controversies that might be interesting to discuss.
     the latest episode topic should be a paragraph or two about the latest episode, and the clip topics should be a list of 5-10 topics that are interesting to discuss.
@@ -118,7 +119,7 @@ def search_and_render_audio():
     script_key = "prompt-to-speech" 
 
     # A prompt is used to describe the generative task you want to perform
-    prompt = vj.prompts.generate(task="You are a 'The Rehearsal' episode analyzer, diving deep into meta idea to discuss. You aim for 30 second long read script concept that is funny and insightful.",
+    prompt = vj.prompts.generate(task="You are a 'The Rehearsal' episode analyzer, diving deep into meta idea to discuss. You aim for 30 second long read script concept that is funny and insightful. You should make the viewer reflect on the themes of the show.",
                                 parameters=["clip topic", "latest episode topic"])
 
     # Now we can create a project to hold our generated media
@@ -206,7 +207,7 @@ async def async_main(project_id: Optional[str] = None, asset_id: Optional[str] =
             
             async with search_agent.run_mcp_servers():
                 print(f"\nSearch attempt {search_attempts}: Searching for Nathan Fielder clips...")
-                search_query = f"can you search the web for the newest clips about nathan fielder? I'd like a list of {videos_to_request} urls with video clips. it's may 29, 2025 by the way, and nathan is doing a show called 'the rehearsal'."
+                search_query = f"can you search the web for the newest clips about nathan fielder? I'd like a list of {videos_to_request} urls with video clips. it's may 30, 2025 by the way, and nathan is doing a show called 'the rehearsal'."
                 if search_attempts > 1:
                     search_query += " Please find different clips than before."
                 
@@ -286,7 +287,7 @@ async def async_main(project_id: Optional[str] = None, asset_id: Optional[str] =
                                       think hard about when to start and stop each video asset in the edit, and how to make it flow well with the voiceover. MAKE SURE TO DOUBLE CHECK THAT THE TOTAL DURATION OF THE VIDEO EDIT IS THE SAME AS THE VOICEOVER DURATION WHICH IS {asset_length} SECONDS. 
                                       BE SURE TO SET ALL VIDEO ASSET's audio_level TO 0 so that the voiceover is the only audio in the edit. 
                                       remember, you MUST use the AUDIO asset in the project as the voiceover for the edit, and you can UPDATE the EDIT if you need to. """,
-                                      usage_limits=UsageLimits(request_limit=10))
+                                      usage_limits=UsageLimits(request_limit=14))
     print(f"resultant project is: {result.output.project_id} and {result.output.edit_id}")
     # below is not necessary because open the edit in the browser is default behavior
     # vj.edits.open_in_browser(project.id, result.output.edit_id)
