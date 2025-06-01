@@ -2,7 +2,12 @@
 
 Click below to watch the repo in action on YouTube:
 
+## Part 1:
 [![Video Editing Agent Video](./assets/video-thumbnail.png)](https://www.youtube.com/watch?v=C-ewKa3NcZI)
+
+## Part 2:
+
+[![Video Editing Agent with Voice Overlay](./assets/video2.png)](https://www.youtube.com/watch?v=JpSZr3L84HY)
 
 You'll need a [Video Jungle API key](https://app.video-jungle.com/profile/settings), set as `VJ_API_KEY`, an Anthropic API key, and a [Serper API Key](https://serper.dev/), set as `SERPER_API_KEY`.
 
