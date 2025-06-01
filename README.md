@@ -2,10 +2,11 @@
 
 Click below to watch the repo in action on YouTube:
 
-## Part 1:
+## Part 1: Building an Autonomous Editing Agent
+
 [![Video Editing Agent Video](./assets/video-thumbnail.png)](https://www.youtube.com/watch?v=C-ewKa3NcZI)
 
-## Part 2:
+## Part 2: Building a Video Editing Agent with Voiceover
 
 [![Video Editing Agent with Voice Overlay](./assets/video2.png)](https://www.youtube.com/watch?v=JpSZr3L84HY)
 
