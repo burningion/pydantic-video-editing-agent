@@ -1,3 +1,15 @@
+# /// script
+# requires-python = ">=3.11"
+# dependencies = [
+#     "anthropic",
+#     "click",
+#     "instructor",
+#     "pydantic-ai",
+#     "videojungle",
+#     "yt-dlp",
+# ]
+# ///
+
 from pydantic_ai import Agent
 from pydantic_ai.usage import UsageLimits
 from pydantic_ai.models.anthropic import AnthropicModel
