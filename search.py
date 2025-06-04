@@ -33,7 +33,8 @@ vj_server = MCPServerStdio(
     ],
     env={
         'VJ_API_KEY': vj_api_key,
-    }
+    },
+    timeout=30
 )
 
 

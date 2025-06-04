@@ -1,15 +1,3 @@
-# /// script
-# requires-python = ">=3.11"
-# dependencies = [
-#     "anthropic",
-#     "click",
-#     "instructor",
-#     "pydantic-ai",
-#     "videojungle",
-#     "yt-dlp",
-# ]
-# ///
-
 from pydantic_ai import Agent
 from pydantic_ai.usage import UsageLimits
 from pydantic_ai.models.anthropic import AnthropicModel
@@ -48,12 +36,13 @@ vj_server = MCPServerStdio(
     'uvx',
     args=[
         '-p', '3.11',
-        '--from', 'video_editor_mcp@0.1.33',
+        '--from', 'video_editor_mcp@0.1.36',
         'video-editor-mcp'
     ],
     env={
         'VJ_API_KEY': vj_api_key,
-    }
+    },
+    timeout=30
 )
 
 serper_server = MCPServerStdio(
@@ -64,7 +53,8 @@ serper_server = MCPServerStdio(
     ],
     env={
         'SERPER_API_KEY': serper_api_key,
-    }
+    },
+    timeout=30
 )
 
 class ClipParameters(BaseModel):

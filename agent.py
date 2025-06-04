@@ -29,12 +29,13 @@ vj_server = MCPServerStdio(
     'uvx',
     args=[
         '-p', '3.11',
-        '--from', 'video_editor_mcp@0.1.32',
+        '--from', 'video_editor_mcp@0.1.36',
         'video-editor-mcp'
     ],
     env={
         'VJ_API_KEY': vj_api_key,
-    }
+    },
+    timeout=30
 )
 
 serper_server = MCPServerStdio(
