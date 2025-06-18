@@ -293,6 +293,12 @@ async def async_main(project_id: Optional[str] = None, asset_id: Optional[str] =
     print(f"resultant project is: {result.output.project_id} and {result.output.edit_id}")
     # below is not necessary because open the edit in the browser is default behavior
     # vj.edits.open_in_browser(project.id, result.output.edit_id)
+    # Render and download the edit
+    vj.edits.download_edit_render(
+        project_id=result.output.project_id,
+        edit_id=result.output.edit_id,
+        filename=f"{project.name}_edit.mp4"
+    )
 
 @click.command()
 @click.option('--project-id', '-p', help='Existing project ID to use instead of creating a new one')
