@@ -301,9 +301,9 @@ async def async_main(generate_audio: bool, search_for_videos: bool, topic_index:
     project_id = None
     audio_asset_id = None
     
-    # Optionally generate audio
+    # Optionally generate video on Video Jungle
     if generate_audio:
-        print("Generating audio voiceover on Video Jungle...")
+        print("Generating video on Video Jungle...")
         
         # Create a prompt for the voice generation
         prompt = vj.prompts.generate(
@@ -317,14 +317,14 @@ async def async_main(generate_audio: bool, search_for_videos: bool, topic_index:
             name=project_name, 
             description=f"Educational video about {selected_topic.heading}", 
             prompt_id=prompt.id, 
-            generation_method="prompt-to-speech"
+            generation_method="prompt-to-video"
         )
         
         script_id = project.scripts[0].id
         print(f"Created project: {project.name} with ID: {project.id}")
         
         # Generate audio
-        audio = vj.projects.generate(
+        audio = vj.projects.generate_from_prompt(
             script_id=script_id, 
             project_id=project.id,
             parameters={"script": voice_script.script}
