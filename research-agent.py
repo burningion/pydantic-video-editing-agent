@@ -325,10 +325,9 @@ async def async_main(generate_audio: bool, search_for_videos: bool, topic_index:
         
         # Generate audio
         audio = vj.projects.generate_from_prompt(
-            script_id=script_id, 
-            project_id=project.id,
-            parameters={"script": voice_script.script}
-        )
+                            project_id=project.id,
+                            script_id=script_id,
+                            prompt=voice_script.script)   
         
         print(f"Generated voiceover with asset id: {audio['asset_id']}")
         project_id = project.id
