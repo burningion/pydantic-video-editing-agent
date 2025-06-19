@@ -11,7 +11,7 @@ import instructor
 from anthropic import Anthropic # Assumes you've set your API key as an environment variable
 
 from pydantic import BaseModel, Field
-from utils.tools import download 
+from utils.tools import download
 import logfire
 import os
 import time
@@ -32,7 +32,7 @@ logfire.instrument_openai()
 
 vj = ApiClient(vj_api_key) # video jungle api client
 
-vj_server = MCPServerStdio(  
+vj_server = MCPServerStdio(
     'uvx',
     args=[
         '-p', '3.11',
@@ -77,9 +77,9 @@ def search_and_render_audio():
     # and generate paramters for our prompt
     workflow_client = Anthropic()
     client = instructor.from_anthropic(workflow_client)  # Initialize the instructor with Anthropic client
-    
+
     search_prompt = """
-    I'm trying to come up with an interesting spoken dialogue prompt about nathan fielder's the rehearsal season 2. 
+    I'm trying to come up with an interesting spoken dialogue prompt about nathan fielder's the rehearsal season 2.
     can you help me come up with ideas for what might be interesting? you can search the web to get up to date info.
     don't give me a summary of the show, or the show as a topic. instead just give me a list of topics or controversies that might be interesting to discuss.
     the latest episode topic should be a paragraph or two about the latest episode, and the clip topics should be a list of 5-10 topics that are interesting to discuss.
@@ -118,7 +118,7 @@ def search_and_render_audio():
 
     # For this example, we'll use the key for generating a voiceover
     # (Would otherwise be media.key) from our list above
-    script_key = "prompt-to-speech" 
+    script_key = "prompt-to-speech"
 
     # A prompt is used to describe the generative task you want to perform
     prompt = vj.prompts.generate(task="You are a 'The Rehearsal' episode analyzer, diving deep into meta idea to discuss. You aim for 30 second long read script concept that is funny and insightful. You should make the viewer reflect on the themes of the show.",
@@ -134,7 +134,7 @@ def search_and_render_audio():
     topic = random.choice(resp.clip_topics)
     print(f"Selected topic: {topic}")
     # We can now generate a prompt-to-speech asset:
-    audio = vj.projects.generate(script_id=script_id, 
+    audio = vj.projects.generate(script_id=script_id,
                                 project_id=project.id,
                                 parameters={"clip topic": topic,
                                             "latest episode topic": resp.latest_episode_topic})
@@ -158,18 +158,18 @@ edit_agent = Agent(
     output_type=VideoEdit,
     instrument=True,
 )
-search_agent = Agent(  
+search_agent = Agent(
     model=cheap_model,
-    instructions='You are an expert video sourcer. You find the best source videos for a given topic.', 
+    instructions='You are an expert video sourcer. You find the best source videos for a given topic.',
     mcp_servers=[vj_server, serper_server],
     output_type=VideoList,
     instrument=True,
 )
 
 async def async_main(project_id: Optional[str] = None, asset_id: Optional[str] = None):
-    
+
     if project_id:
-        
+
         # Use existing project TODO: not implemented yet
         print(f"Using existing project ID: {project_id}")
         project = vj.projects.get(project_id)
@@ -181,12 +181,12 @@ async def async_main(project_id: Optional[str] = None, asset_id: Optional[str] =
             result = await edit_agent.run(f"""can you use the video assets in the project_id '{project.id}' to create a
                                       single edit incorporating all the assets that are videos in there? use the audio asset with id '{asset_id}' as the voiceover for the edit. it should have a start time of 0 and an end time of {asset_length} seconds.
                                       be sure to not render the final video, just create the edit. if there are any outdoor scenes,
-                                      show them first. also, only use the assets in the project in the edit. you should grab 
-                                      two asset's info from the project at a time, and use multiple requests from the get-project-assets 
+                                      show them first. also, only use the assets in the project in the edit. you should grab
+                                      two asset's info from the project at a time, and use multiple requests from the get-project-assets
                                       tool if you use it if necessary. only show each video once in the edit. remember, each asset in the edit should have a start_time and an end_time where something interesting happens,
                                       and the total duration of these start_time and stop_time added together for the video edits should match the asset's duration, {asset_length} seconds.
-                                      think hard about when to start and stop each video asset in the edit, and how to make it flow well with the voiceover. MAKE SURE TO DOUBLE CHECK THAT THE TOTAL DURATION OF THE VIDEO EDIT IS THE SAME AS THE VOICEOVER DURATION WHICH IS {asset_length} SECONDS. 
-                                      BE SURE TO SET ALL VIDEO ASSET's audio_level TO 0 so that the voiceover is the only audio in the edit. 
+                                      think hard about when to start and stop each video asset in the edit, and how to make it flow well with the voiceover. MAKE SURE TO DOUBLE CHECK THAT THE TOTAL DURATION OF THE VIDEO EDIT IS THE SAME AS THE VOICEOVER DURATION WHICH IS {asset_length} SECONDS.
+                                      BE SURE TO SET ALL VIDEO ASSET's audio_level TO 0 so that the voiceover is the only audio in the edit.
                                       remember, you MUST use the AUDIO asset in the project as the voiceover for the edit, and you can UPDATE the EDIT if you need to.""",
                                         usage_limits=UsageLimits(request_limit=10))
         print(f"resultant project is: {result.output.project_id} and {result.output.edit_id}")
@@ -203,32 +203,32 @@ async def async_main(project_id: Optional[str] = None, asset_id: Optional[str] =
         project = vj.projects.get(project_id)
         while successful_videos < 5 and search_attempts < max_search_attempts:
             search_attempts += 1
-            
+
             # Request more videos than needed to account for failures
             videos_to_request = 8 if search_attempts == 1 else 10
-            
+
             async with search_agent.run_mcp_servers():
                 print(f"\nSearch attempt {search_attempts}: Searching for Nathan Fielder clips...")
                 search_query = f"can you search the web for the newest clips about nathan fielder? I'd like a list of {videos_to_request} urls with video clips. it's may 30, 2025 by the way, and nathan is doing a show called 'the rehearsal'."
                 if search_attempts > 1:
                     search_query += " Please find different clips than before."
-                
+
                 result = await search_agent.run(search_query, usage_limits=UsageLimits(request_limit=5))
-            
+
             print(f"Found {len(result.output.videos)} videos in search attempt {search_attempts}")
-            
+
             for video in result.output.videos:
                 # Skip if we've already tried this URL
                 if video.url in processed_urls:
                     print(f"Skipping already processed URL: {video.url}")
                     continue
-                
+
                 processed_urls.add(video.url)
-                
+
                 # Stop if we have enough videos
                 if successful_videos >= 5:
                     break
-                
+
                 print(f"Processing video - Title: {video.title}, URL: {video.url}")
                 # Create a safe filename by replacing problematic characters
                 safe_title = video.title.replace('/', '-').replace('\\', '-')
@@ -268,13 +268,13 @@ async def async_main(project_id: Optional[str] = None, asset_id: Optional[str] =
         print(f"\nFinal Summary: Successfully processed {successful_videos} videos after {search_attempts} search attempts")
         if failed_videos:
             print(f"Failed to process {len(failed_videos)} videos: {', '.join(failed_videos)}")
-        
+
         if successful_videos < 5:
             print(f"\nWarning: Only managed to download {successful_videos} videos after {search_attempts} attempts")
-        
+
         time.sleep(45) # wait 45 seconds for analysis to finish (we'll make this precise later)
     # Next we can use the project info to generate a rough cut
-    
+
     async with edit_agent.run_mcp_servers():
         print("Video Editing Agent is now running")
         asset = vj.assets.get(audio_asset_id)
@@ -282,12 +282,12 @@ async def async_main(project_id: Optional[str] = None, asset_id: Optional[str] =
         result = await edit_agent.run(f"""can you use the video assets in the project_id '{project.id}' to create a
                                       single edit incorporating all the assets that are videos in there? use the audio asset with id '{audio_asset_id}' as the voiceover for the edit. it should have a start time of 0 and an end time of {asset_length} seconds.
                                       be sure to not render the final video, just create the edit. if there are any outdoor scenes,
-                                      show them first. also, only use the assets in the project in the edit. you should grab 
-                                      two asset's info from the project at a time, and use multiple requests from the get-project-assets 
+                                      show them first. also, only use the assets in the project in the edit. you should grab
+                                      two asset's info from the project at a time, and use multiple requests from the get-project-assets
                                       tool if you use it if necessary. only show each video once in the edit. remember, each asset in the edit should have a start_time and an end_time where something interesting happens,
                                       and the total duration of these start_time and stop_time added together for the video edits should match the asset's duration, {asset_length} seconds.
-                                      think hard about when to start and stop each video asset in the edit, and how to make it flow well with the voiceover. MAKE SURE TO DOUBLE CHECK THAT THE TOTAL DURATION OF THE VIDEO EDIT IS THE SAME AS THE VOICEOVER DURATION WHICH IS {asset_length} SECONDS. 
-                                      BE SURE TO SET ALL VIDEO ASSET's audio_level TO 0 so that the voiceover is the only audio in the edit. 
+                                      think hard about when to start and stop each video asset in the edit, and how to make it flow well with the voiceover. MAKE SURE TO DOUBLE CHECK THAT THE TOTAL DURATION OF THE VIDEO EDIT IS THE SAME AS THE VOICEOVER DURATION WHICH IS {asset_length} SECONDS.
+                                      BE SURE TO SET ALL VIDEO ASSET's audio_level TO 0 so that the voiceover is the only audio in the edit.
                                       remember, you MUST use the AUDIO asset in the project as the voiceover for the edit, and you can UPDATE the EDIT if you need to. """,
                                       usage_limits=UsageLimits(request_limit=14))
     print(f"resultant project is: {result.output.project_id} and {result.output.edit_id}")

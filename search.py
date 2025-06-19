@@ -38,7 +38,7 @@ vj_server = MCPServerStdio(
 )
 
 
-model = AnthropicModel("claude-3-7-sonnet-20250219")
+model = AnthropicModel("claude-sonnet-4-20250514")
 
 agent = Agent(  
     model=model,
