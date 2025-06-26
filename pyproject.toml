@@ -5,10 +5,11 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "agentuity>=0.0.95",
+    "agentuity>=0.0.98",
     "click>=8.1.8",
-    "instructor>=1.8.3",
-    "pydantic-ai[logfire,mcp]>=0.3.1",
+    "instructor>=1.9.0",
+    "openai>=1.92.2",
+    "pydantic-ai[logfire,mcp]>=0.3.4",
     "videojungle>=0.1.72",
     "yt-dlp[curl-cffi,default]>=2025.5.22",
 ]
