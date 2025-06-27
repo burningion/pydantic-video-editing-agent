@@ -5,7 +5,7 @@ Deep Research Query App - A Textual application for iterative query refinement
 
 from textual.app import App, ComposeResult
 from textual.containers import ScrollableContainer, Horizontal, Vertical
-from textual.widgets import Input, Button, Static, LoadingIndicator, TextArea, MarkdownViewer
+from textual.widgets import Input, Button, Static, LoadingIndicator, TextArea, MarkdownViewer, Select
 from textual.reactive import reactive
 from textual.binding import Binding
 from textual import events
@@ -88,6 +88,11 @@ class ResearchApp(App):
         margin: 1 0;
     }
     
+    #model-select {
+        width: 100%;
+        margin: 1 0;
+    }
+    
     #clarification-input {
         width: 100%;
         height: 15;
@@ -144,6 +149,7 @@ class ResearchApp(App):
         self.saved_filename = ""
         self.showing_markdown = False
         self.research_completed = False
+        self.selected_model = "o3-deep-research-2025-06-26"  # Default to o3
         
     def compose(self) -> ComposeResult:
         """Create the app layout"""
@@ -184,11 +190,20 @@ class ResearchApp(App):
         if event.input.id == "query-input":
             await self.handle_next()
     
+    def on_select_changed(self, event: Select.Changed) -> None:
+        """Handle select widget changes"""
+        if event.select.id == "model-select":
+            self.selected_model = event.value
+    
     async def handle_next(self) -> None:
         """Handle the next button press"""
         if self.step == 0:  # Initial query step
             query_input = self.query_one("#query-input", Input)
             self.current_query = query_input.value.strip()
+            
+            # Get selected model
+            model_select = self.query_one("#model-select", Select)
+            self.selected_model = model_select.value
             
             if not self.current_query:
                 return
@@ -320,11 +335,23 @@ class ResearchApp(App):
             next_button.label = "Next →"
             next_button.disabled = False
             
+            # Define model options - Select widget expects (label, value) tuples
+            model_options = [
+                ("o3 Deep Research (More thorough, ~$10-30)", "o3-deep-research-2025-06-26"),
+                ("o4 Mini Deep Research (Faster, ~$3)", "o4-mini-deep-research-2025-06-26")
+            ]
+            
             content_area.mount(
                 Vertical(
                     Static("[bold]Enter your research query:[/bold]", classes="step-content"),
                     Static("Be as specific as possible about what you want to research.", classes="step-content"),
                     Input(placeholder="Enter your research query...", id="query-input", value=self.current_query),
+                    Static("\n[bold]Select research model:[/bold]", classes="step-content"),
+                    Select(
+                        options=model_options,
+                        value=self.selected_model,
+                        id="model-select"
+                    ),
                     classes="step-content"
                 )
             )
@@ -431,8 +458,11 @@ class ResearchApp(App):
     
     async def perform_research(self) -> None:
         """Perform the actual deep research"""
+        # Use the selected model
+        model_name = self.selected_model
+        
         output_area = self.query_one("#research-output", TextArea)
-        output_area.text = f"[{datetime.now().strftime('%H:%M:%S')}] Starting deep research...\n\n"
+        output_area.text = f"[{datetime.now().strftime('%H:%M:%S')}] Starting deep research with {model_name}...\n\n"
         
         try:
             # Build instructions for deep research
@@ -471,7 +501,7 @@ Please incorporate these clarifications into your research."""
                 deep_research_call = await asyncio.to_thread(
                     self.client.responses.create,
                     # model="o4-mini-deep-research-2025-06-26", # cheaper, ~$3
-                    model="o3-deep-research-2025-06-26",
+                    model=model_name,
                     input=[
                         {
                             "role": "developer",
@@ -531,6 +561,7 @@ Please incorporate these clarifications into your research."""
             markdown_content = f"""# Research Report
 
 **Date:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+**Model:** {model_name}
 **Research Duration:** {elapsed:.1f} seconds
 
 ## Original Query
@@ -652,6 +683,7 @@ Please incorporate these clarifications into your research."""
         self.saved_filename = ""
         self.showing_markdown = False
         self.research_completed = False
+        # Keep the selected model from previous session
         
         # Cancel any running research task
         if self.research_task and not self.research_task.done():
