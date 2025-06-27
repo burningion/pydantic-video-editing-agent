@@ -61,10 +61,10 @@ class ResearchApp(App):
     }
     
     #content-area {
-        margin: 2;
+        margin: 1;
         padding: 2;
         border: solid $primary;
-        height: 80%;
+        height: 85%;
     }
     
     /* Disable scrolling on content-area when showing research output */
