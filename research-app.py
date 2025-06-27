@@ -420,22 +420,6 @@ class ResearchApp(App):
                 last_heartbeat = current_10s
                 output_area.text += f"\n[{datetime.now().strftime('%H:%M:%S')}] Still working... ({minutes}m {seconds}s elapsed)"
                 
-                # Add specific messages at certain intervals
-                if minutes == 1 and seconds < 10:
-                    output_area.text += "\n    → The AI is searching through web sources..."
-                elif minutes == 2 and seconds < 10:
-                    output_area.text += "\n    → Analyzing and synthesizing information..."
-                elif minutes == 5 and seconds < 10:
-                    output_area.text += "\n    → This is a complex query - still processing..."
-                elif minutes == 10 and seconds < 10:
-                    output_area.text += "\n⚠️  This is taking longer than usual - complex research in progress!"
-                elif minutes == 15 and seconds < 10:
-                    output_area.text += "\n⏰ 15 minutes elapsed - this must be a very thorough investigation!"
-                elif minutes >= 20 and (minutes % 5 == 0) and seconds < 10:
-                    output_area.text += "\n⚠️  Exceptionally long query - the AI is doing deep research!"
-                elif minutes >= 30 and (minutes % 10 == 0) and seconds < 10:
-                    output_area.text += f"\n⏳ {minutes} minutes elapsed - this is an unusually complex query!"
-                
                 # Scroll to bottom
                 output_area.cursor_location = (output_area.document.line_count - 1, 0)
                 output_area.scroll_cursor_visible(animate=False)
