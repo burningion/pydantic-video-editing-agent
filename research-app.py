@@ -165,6 +165,10 @@ class ResearchApp(App):
     
     async def on_button_pressed(self, event: Button.Pressed) -> None:
         """Handle button press events"""
+        # Debug: log button press
+        button = event.button
+        print(f"Button pressed: {button.id}, label: {button.label}")
+        
         if event.button.id == "next-button":
             await self.handle_next()
         elif event.button.id == "back-button":
@@ -213,6 +217,14 @@ class ResearchApp(App):
     
     async def handle_back(self) -> None:
         """Handle the back button press"""
+        back_button = self.query_one("#back-button", Button)
+        
+        # If we're in step 2 and the button says "Exit", always exit
+        if self.step == 2 and back_button.label == "Exit":
+            print("Exiting app...")  # Debug
+            self.exit()
+            return
+        
         # Check if this is a cancel operation during research
         if self.step == 2 and hasattr(self, '_research_running') and self._research_running:
             self._research_running = False
@@ -220,17 +232,9 @@ class ResearchApp(App):
             output_area.text += "\n\n❌ Research cancelled by user\n"
             
             # Reset back button
-            back_button = self.query_one("#back-button", Button)
             back_button.label = "← Back"
             back_button.disabled = True
             back_button.variant = "default"
-            return
-        
-        # Check if this is an exit from completed research
-        back_button = self.query_one("#back-button", Button)
-        if self.step == 2 and back_button.label == "Exit":
-            # Exit the app
-            self.exit()
             return
             
         if self.step > 0:
@@ -554,14 +558,21 @@ Please incorporate these clarifications into your research."""
             next_button = self.query_one("#next-button", Button)
             next_button.label = "New Research"
             next_button.disabled = False  # Ensure it's enabled
+            next_button.visible = True
             
             back_button = self.query_one("#back-button", Button)
             back_button.label = "Exit"
             back_button.disabled = False
             back_button.variant = "error"
+            back_button.visible = True
             
             # Force refresh the button to ensure it's clickable
             back_button.refresh()
+            next_button.refresh()
+            
+            # Ensure buttons are in front
+            navigation = self.query_one("#navigation", Horizontal)
+            navigation.refresh()
             
             # Add view markdown button if file was saved
             if self.saved_filename:
@@ -607,7 +618,12 @@ Please incorporate these clarifications into your research."""
             back_button.label = "Exit"
             back_button.disabled = False
             back_button.variant = "error"
+            back_button.visible = True
             back_button.refresh()
+            
+            # Also ensure navigation is refreshed
+            navigation = self.query_one("#navigation", Horizontal)
+            navigation.refresh()
     
     def action_reset(self) -> None:
         """Reset the app to initial state"""
