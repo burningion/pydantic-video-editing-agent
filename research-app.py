@@ -143,6 +143,7 @@ class ResearchApp(App):
         self.research_results = ""
         self.saved_filename = ""
         self.showing_markdown = False
+        self.research_completed = False
         
     def compose(self) -> ComposeResult:
         """Create the app layout"""
@@ -219,8 +220,8 @@ class ResearchApp(App):
         """Handle the back button press"""
         back_button = self.query_one("#back-button", Button)
         
-        # If we're in step 2 and the button says "Exit", always exit
-        if self.step == 2 and back_button.label == "Exit":
+        # If the button says "Exit" at any step, exit the app
+        if back_button.label == "Exit":
             print("Exiting app...")  # Debug
             self.exit()
             return
@@ -313,7 +314,9 @@ class ResearchApp(App):
         
         if step == 0:  # Initial query
             step_indicator.update("Step 1 of 3: Enter your research query")
-            back_button.disabled = True
+            back_button.label = "Exit"
+            back_button.disabled = False
+            back_button.variant = "error"
             next_button.label = "Next →"
             next_button.disabled = False
             
@@ -347,15 +350,21 @@ class ResearchApp(App):
             
         elif step == 2:  # Research
             step_indicator.update("Step 3 of 3: Research results")
-            back_button.disabled = True
             next_button.label = "New Research"
             next_button.disabled = False
             
-            # Add cancel button during research
-            if hasattr(self, '_research_running') and self._research_running:
-                back_button.label = "Cancel"
+            # Check if research is completed
+            if self.research_completed:
+                back_button.label = "Exit"
                 back_button.disabled = False
                 back_button.variant = "error"
+            else:
+                back_button.disabled = True
+                # Add cancel button during research
+                if hasattr(self, '_research_running') and self._research_running:
+                    back_button.label = "Cancel"
+                    back_button.disabled = False
+                    back_button.variant = "error"
             
             # Disable scrolling on content_area since TextArea has its own scrollbar
             content_area.add_class("no-scroll")
@@ -554,6 +563,9 @@ Please incorporate these clarifications into your research."""
                 output_area.cursor_location = (output_area.document.line_count - 1, 0)
                 output_area.scroll_cursor_visible()
             
+            # Mark research as completed
+            self.research_completed = True
+            
             # Update buttons for completed research
             next_button = self.query_one("#next-button", Button)
             next_button.label = "New Research"
@@ -613,6 +625,9 @@ Please incorporate these clarifications into your research."""
             output_area.cursor_location = (output_area.document.line_count - 1, 0)
             output_area.scroll_cursor_visible()
             
+            # Mark as completed even on error
+            self.research_completed = True
+            
             # Enable exit button even on error
             back_button = self.query_one("#back-button", Button)
             back_button.label = "Exit"
@@ -636,6 +651,7 @@ Please incorporate these clarifications into your research."""
         self.research_results = ""
         self.saved_filename = ""
         self.showing_markdown = False
+        self.research_completed = False
         
         # Cancel any running research task
         if self.research_task and not self.research_task.done():
@@ -684,12 +700,36 @@ Please incorporate these clarifications into your research."""
         self.showing_markdown = False
         await self.show_step(2)
         
-        # Restore buttons
+        # Restore buttons with proper state
         next_button = self.query_one("#next-button", Button)
         next_button.visible = True
+        next_button.label = "New Research"
+        next_button.disabled = False
         
         back_button = self.query_one("#back-button", Button)
         back_button.visible = True
+        back_button.label = "Exit"
+        back_button.disabled = False
+        back_button.variant = "error"
+        
+        # Force refresh
+        back_button.refresh()
+        next_button.refresh()
+        
+        # Re-add the markdown button if needed
+        if self.saved_filename:
+            content_area = self.query_one("#content-area", ScrollableContainer)
+            try:
+                content_area.query_one("#view-markdown-button")
+            except:
+                text_area = content_area.query_one("#research-output")
+                content_area.remove_children()
+                content_area.mount(
+                    Vertical(
+                        Button("📄 View Markdown Report", id="view-markdown-button", variant="success"),
+                        text_area
+                    )
+                )
 
 
 if __name__ == "__main__":
