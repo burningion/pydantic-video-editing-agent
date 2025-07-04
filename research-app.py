@@ -74,13 +74,44 @@ class ResearchApp(App):
     
     #navigation {
         dock: bottom;
-        height: 4;
+        height: 5;
+        padding: 1 0;
         align: center middle;
+        layout: horizontal;
     }
     
     #navigation Button {
         margin: 0 1;
-        min-width: 15;
+        width: auto;
+        height: 3;
+    }
+    
+    #navigation Button:hover {
+        background: $surface-lighten-1;
+    }
+    
+    #navigation Button:focus {
+        border: double $accent;
+    }
+    
+    #navigation Button.button--primary {
+        background: $primary;
+        color: $text;
+    }
+    
+    #navigation Button.button--success {
+        background: $success;
+        color: $text;
+    }
+    
+    #navigation Button.button--error {
+        background: $error;
+        color: $text;
+    }
+    
+    #navigation Button.button--default {
+        background: $surface;
+        color: $text;
     }
     
     #query-input {
@@ -388,7 +419,7 @@ class ResearchApp(App):
             
         elif step == 2:  # Research
             step_indicator.update("Step 3 of 3: Research results")
-            next_button.label = "New Research"
+            next_button.label = "New"
             next_button.disabled = False
             
             # Check if research is completed
@@ -594,7 +625,7 @@ Please incorporate these clarifications into your research."""
             
             # Update buttons for completed research
             next_button = self.query_one("#next-button", Button)
-            next_button.label = "New Research"
+            next_button.label = "New"
             next_button.disabled = False  # Ensure it's enabled
             next_button.visible = True
             
@@ -622,8 +653,8 @@ Please incorporate these clarifications into your research."""
                 except:
                     # Insert buttons before the existing navigation buttons
                     navigation.mount(
-                        Button("📄 View Report", id="view-markdown-button", variant="success"),
-                        Button("✏️ Edit Response", id="edit-markdown-button", variant="primary"),
+                        Button("View", id="view-markdown-button", variant="success"),
+                        Button("Edit", id="edit-markdown-button", variant="primary"),
                         before=0  # Insert at the beginning
                     )
             
@@ -682,6 +713,20 @@ Please incorporate these clarifications into your research."""
         if self.research_task and not self.research_task.done():
             self.research_task.cancel()
         
+        # Remove the View and Edit buttons if they exist
+        navigation = self.query_one("#navigation", Horizontal)
+        try:
+            view_btn = navigation.query_one("#view-markdown-button")
+            view_btn.remove()
+        except:
+            pass
+        
+        try:
+            edit_btn = navigation.query_one("#edit-markdown-button")
+            edit_btn.remove()
+        except:
+            pass
+        
         # Show initial step
         asyncio.create_task(self.show_step(0))
 
@@ -729,24 +774,25 @@ Please incorporate these clarifications into your research."""
         content_area = self.query_one("#content-area", ScrollableContainer)
         content_area.remove_children()
         
-        # Create editor with just the research results
-        editor = TextArea(self.research_results, language="markdown", show_line_numbers=True)
-        editor.styles.height = "85%"
+        # Remove no-scroll class to allow scrolling
+        content_area.remove_class("no-scroll")
         
         # Generate filename for the edited response
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         self.edit_filename = f"research_response_{timestamp}.md"
         
+        # Create editor with specific height
+        editor = TextArea(self.research_results, language="markdown", show_line_numbers=True)
+        editor.styles.height = "75%"  # Reduced to leave room for buttons
+        
+        # Mount all widgets directly to content_area
         content_area.mount(
-            Vertical(
-                Static(f"Editing research response (will save as: {self.edit_filename})", classes="step-content"),
-                editor,
-                Horizontal(
-                    Button("💾 Save as New File", id="save-edit-button", variant="success"),
-                    Button("Cancel", id="cancel-edit-button", variant="default"),
-                    classes="step-content"
-                ),
-                id="editor-container"
+            Static(f"Editing research response (will save as: {self.edit_filename})", classes="step-content"),
+            editor,
+            Horizontal(
+                Button("💾 Save as New File", id="save-edit-button", variant="success"),
+                Button("Cancel", id="cancel-edit-button", variant="default"),
+                classes="step-content"
             )
         )
         
@@ -764,8 +810,15 @@ Please incorporate these clarifications into your research."""
 
     async def save_markdown_edits(self) -> None:
         """Save the edited markdown content to a new file"""
-        if hasattr(self, 'markdown_editor') and hasattr(self, 'edit_filename'):
-            edited_content = self.markdown_editor.text
+        try:
+            # Get the TextArea from the current view
+            editor = self.query_one(TextArea)
+            edited_content = editor.text
+            
+            # Use the stored filename or generate a new one
+            if not hasattr(self, 'edit_filename'):
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                self.edit_filename = f"research_response_{timestamp}.md"
             
             # Save to the new file
             with open(self.edit_filename, 'w') as f:
@@ -774,15 +827,24 @@ Please incorporate these clarifications into your research."""
             # Update the stored research results
             self.research_results = edited_content
             
+            # Store the filename for the success message
+            saved_filename = self.edit_filename
+            
             # Return to results view
             await self.hide_markdown_editor()
             
             # Show success message
-            output_area = self.query_one("#research-output", TextArea)
-            current_text = output_area.text
-            output_area.text = current_text + f"\n\n✅ Edited response saved to: {self.edit_filename}"
-            output_area.cursor_location = (output_area.document.line_count - 1, 0)
-            output_area.scroll_cursor_visible()
+            try:
+                output_area = self.query_one("#research-output", TextArea)
+                current_text = output_area.text
+                output_area.text = current_text + f"\n\n✅ Edited response saved to: {saved_filename}"
+                output_area.cursor_location = (output_area.document.line_count - 1, 0)
+                output_area.scroll_cursor_visible()
+            except:
+                # If we can't find the output area, that's okay
+                pass
+        except Exception as e:
+            self.notify(f"Error saving: {str(e)}", severity="error")
 
     async def hide_markdown_editor(self) -> None:
         """Return from the editor to the research results view"""
@@ -802,7 +864,7 @@ Please incorporate these clarifications into your research."""
         
         # Ensure proper button states
         next_button = self.query_one("#next-button", Button)
-        next_button.label = "New Research"
+        next_button.label = "New"
         next_button.disabled = False
         
         back_button = self.query_one("#back-button", Button)
@@ -818,7 +880,7 @@ Please incorporate these clarifications into your research."""
         # Restore buttons with proper state
         next_button = self.query_one("#next-button", Button)
         next_button.visible = True
-        next_button.label = "New Research"
+        next_button.label = "New"
         next_button.disabled = False
         
         back_button = self.query_one("#back-button", Button)
