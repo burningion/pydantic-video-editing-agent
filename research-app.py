@@ -74,7 +74,7 @@ class ResearchApp(App):
     
     #navigation {
         dock: bottom;
-        height: 5;
+        height: 4;
         align: center middle;
     }
     
@@ -91,6 +91,11 @@ class ResearchApp(App):
     #model-select {
         width: 100%;
         margin: 1 0;
+        min-height: 3;
+    }
+    
+    Select > SelectCurrent {
+        padding: 0 2;
     }
     
     #clarification-input {

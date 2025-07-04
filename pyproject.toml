@@ -7,9 +7,10 @@ requires-python = ">=3.11"
 dependencies = [
     "agentuity>=0.0.98",
     "click>=8.1.8",
+    "fal-client",
     "instructor>=1.9.0",
     "openai>=1.92.2",
-    "pydantic-ai[logfire,mcp]>=0.3.4",
+    "pydantic-ai-slim[openai,anthropic,google]>=0.3.5",
     "textual>=3.5.0",
     "videojungle>=0.1.72",
     "yt-dlp[curl-cffi,default]>=2025.5.22",
@@ -19,3 +20,6 @@ dependencies = [
 dev = [
     "ipython>=9.2.0",
 ]
+
+[tool.uv.sources]
+fal-client = { git = "https://github.com/burningion/fal.git", subdirectory = "projects/fal_client", rev = "kirk.kaiser/httpx.version.bump" }
