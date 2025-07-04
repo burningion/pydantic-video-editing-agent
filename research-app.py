@@ -80,7 +80,7 @@ class ResearchApp(App):
     
     #navigation Button {
         margin: 0 1;
-        width: 20;
+        min-width: 15;
     }
     
     #query-input {
@@ -189,6 +189,12 @@ class ResearchApp(App):
             await self.show_markdown_report()
         elif event.button.id == "markdown-back-button":
             await self.hide_markdown_report()
+        elif event.button.id == "edit-markdown-button":
+            await self.show_markdown_editor()
+        elif event.button.id == "save-edit-button":
+            await self.save_markdown_edits()
+        elif event.button.id == "cancel-edit-button":
+            await self.hide_markdown_editor()
     
     async def on_input_submitted(self, event: Input.Submitted) -> None:
         """Handle input submission"""
@@ -606,21 +612,19 @@ Please incorporate these clarifications into your research."""
             navigation = self.query_one("#navigation", Horizontal)
             navigation.refresh()
             
-            # Add view markdown button if file was saved
+            # Add view markdown and edit buttons if file was saved
             if self.saved_filename:
-                content_area = self.query_one("#content-area", ScrollableContainer)
-                # Check if button already exists
+                # Add buttons to navigation area instead of content area
+                navigation = self.query_one("#navigation", Horizontal)
+                # Check if buttons already exist
                 try:
-                    content_area.query_one("#view-markdown-button")
+                    navigation.query_one("#view-markdown-button")
                 except:
-                    # Add button at the top of the content area
-                    text_area = content_area.query_one("#research-output")
-                    content_area.remove_children()
-                    content_area.mount(
-                        Vertical(
-                            Button("📄 View Markdown Report", id="view-markdown-button", variant="success"),
-                            text_area
-                        )
+                    # Insert buttons before the existing navigation buttons
+                    navigation.mount(
+                        Button("📄 View Report", id="view-markdown-button", variant="success"),
+                        Button("✏️ Edit Response", id="edit-markdown-button", variant="primary"),
+                        before=0  # Insert at the beginning
                     )
             
         except Exception as e:
@@ -716,6 +720,96 @@ Please incorporate these clarifications into your research."""
         step_indicator = self.query_one("#step-indicator", Static)
         step_indicator.update("Viewing Markdown Report")
     
+    async def show_markdown_editor(self) -> None:
+        """Show a text editor for just the research response"""
+        if not self.research_results:
+            return
+        
+        # Clear the content area and show editor
+        content_area = self.query_one("#content-area", ScrollableContainer)
+        content_area.remove_children()
+        
+        # Create editor with just the research results
+        editor = TextArea(self.research_results, language="markdown", show_line_numbers=True)
+        editor.styles.height = "85%"
+        
+        # Generate filename for the edited response
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        self.edit_filename = f"research_response_{timestamp}.md"
+        
+        content_area.mount(
+            Vertical(
+                Static(f"Editing research response (will save as: {self.edit_filename})", classes="step-content"),
+                editor,
+                Horizontal(
+                    Button("💾 Save as New File", id="save-edit-button", variant="success"),
+                    Button("Cancel", id="cancel-edit-button", variant="default"),
+                    classes="step-content"
+                ),
+                id="editor-container"
+            )
+        )
+        
+        # Hide all navigation buttons during editing
+        navigation = self.query_one("#navigation", Horizontal)
+        for button in navigation.query(Button):
+            button.visible = False
+        
+        # Update step indicator
+        step_indicator = self.query_one("#step-indicator", Static)
+        step_indicator.update("Editing Research Response")
+        
+        # Store editor reference
+        self.markdown_editor = editor
+
+    async def save_markdown_edits(self) -> None:
+        """Save the edited markdown content to a new file"""
+        if hasattr(self, 'markdown_editor') and hasattr(self, 'edit_filename'):
+            edited_content = self.markdown_editor.text
+            
+            # Save to the new file
+            with open(self.edit_filename, 'w') as f:
+                f.write(edited_content)
+            
+            # Update the stored research results
+            self.research_results = edited_content
+            
+            # Return to results view
+            await self.hide_markdown_editor()
+            
+            # Show success message
+            output_area = self.query_one("#research-output", TextArea)
+            current_text = output_area.text
+            output_area.text = current_text + f"\n\n✅ Edited response saved to: {self.edit_filename}"
+            output_area.cursor_location = (output_area.document.line_count - 1, 0)
+            output_area.scroll_cursor_visible()
+
+    async def hide_markdown_editor(self) -> None:
+        """Return from the editor to the research results view"""
+        # Clean up editor reference
+        if hasattr(self, 'markdown_editor'):
+            delattr(self, 'markdown_editor')
+        if hasattr(self, 'edit_filename'):
+            delattr(self, 'edit_filename')
+        
+        # Return to research results
+        await self.show_step(2)
+        
+        # Restore all navigation buttons
+        navigation = self.query_one("#navigation", Horizontal)
+        for button in navigation.query(Button):
+            button.visible = True
+        
+        # Ensure proper button states
+        next_button = self.query_one("#next-button", Button)
+        next_button.label = "New Research"
+        next_button.disabled = False
+        
+        back_button = self.query_one("#back-button", Button)
+        back_button.label = "Exit"
+        back_button.disabled = False
+        back_button.variant = "error"
+    
     async def hide_markdown_report(self) -> None:
         """Return to the research results view"""
         self.showing_markdown = False
@@ -737,20 +831,7 @@ Please incorporate these clarifications into your research."""
         back_button.refresh()
         next_button.refresh()
         
-        # Re-add the markdown button if needed
-        if self.saved_filename:
-            content_area = self.query_one("#content-area", ScrollableContainer)
-            try:
-                content_area.query_one("#view-markdown-button")
-            except:
-                text_area = content_area.query_one("#research-output")
-                content_area.remove_children()
-                content_area.mount(
-                    Vertical(
-                        Button("📄 View Markdown Report", id="view-markdown-button", variant="success"),
-                        text_area
-                    )
-                )
+        # No need to re-add buttons - they're in the navigation area now
 
 
 if __name__ == "__main__":
