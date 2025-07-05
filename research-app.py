@@ -164,6 +164,7 @@ class ResearchApp(App):
     BINDINGS = [
         Binding("ctrl+c", "quit", "Quit", priority=True),
         Binding("ctrl+r", "reset", "Reset Query"),
+        Binding("escape", "cancel_research", "Cancel", show=False),
     ]
     
     def __init__(self):
@@ -267,7 +268,8 @@ class ResearchApp(App):
             # Start research
             self.step = 2
             await self.show_step(2)
-            await self.perform_research()
+            # Store the research task so we can cancel it if needed
+            self.research_task = asyncio.create_task(self.perform_research())
             
         elif self.step == 2:  # Research complete, start new
             # Reset the app for new research
@@ -450,37 +452,53 @@ class ResearchApp(App):
         dots = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
         dot_index = 0
         last_heartbeat = 0
+        max_runtime = 7500  # 2 hours + 5 minutes max
         
-        while hasattr(self, '_research_running') and self._research_running:
-            elapsed = (datetime.now() - start_time).total_seconds()
-            minutes = int(elapsed // 60)
-            seconds = int(elapsed % 60)
-            
-            # Add heartbeat message every 10 seconds
-            current_10s = int(elapsed // 10)
-            if current_10s > last_heartbeat:
-                last_heartbeat = current_10s
-                output_area.text += f"\n[{datetime.now().strftime('%H:%M:%S')}] Still working... ({minutes}m {seconds}s elapsed)"
+        try:
+            while hasattr(self, '_research_running') and self._research_running:
+                elapsed = (datetime.now() - start_time).total_seconds()
+                minutes = int(elapsed // 60)
+                seconds = int(elapsed % 60)
                 
-                # Scroll to bottom
-                output_area.cursor_location = (output_area.document.line_count - 1, 0)
-                output_area.scroll_cursor_visible(animate=False)
-            
-            # Update the last line with animated progress
-            lines = output_area.text.split('\n')
-            # Remove previous progress line
-            if lines and "Research in progress..." in lines[-1]:
-                lines = lines[:-1]
-            
-            status_msg = f"{dots[dot_index]} Research in progress... ({minutes:02d}:{seconds:02d} elapsed)"
-            output_area.text = '\n'.join(lines + [status_msg])
-            
-            # Scroll to bottom to show the progress
-            output_area.cursor_location = (output_area.document.line_count - 1, 0)
-            output_area.scroll_cursor_visible(animate=False)
-            
-            dot_index = (dot_index + 1) % len(dots)
-            await asyncio.sleep(0.5)
+                # Safety check: stop if running too long
+                if elapsed > max_runtime:
+                    output_area.text += f"\n\n⚠️ Progress monitoring timeout after {minutes} minutes\n"
+                    break
+                
+                # Add heartbeat message every 10 seconds
+                current_10s = int(elapsed // 10)
+                if current_10s > last_heartbeat:
+                    last_heartbeat = current_10s
+                    output_area.text += f"\n[{datetime.now().strftime('%H:%M:%S')}] Still working... ({minutes}m {seconds}s elapsed)"
+                    
+                    # Scroll to bottom
+                    output_area.cursor_location = (output_area.document.line_count - 1, 0)
+                    output_area.scroll_cursor_visible(animate=False)
+                
+                # Update the last line with animated progress
+                try:
+                    lines = output_area.text.split('\n')
+                    # Remove previous progress line
+                    if lines and "Research in progress..." in lines[-1]:
+                        lines = lines[:-1]
+                    
+                    status_msg = f"{dots[dot_index]} Research in progress... ({minutes:02d}:{seconds:02d} elapsed)"
+                    output_area.text = '\n'.join(lines + [status_msg])
+                    
+                    # Scroll to bottom to show the progress
+                    output_area.cursor_location = (output_area.document.line_count - 1, 0)
+                    output_area.scroll_cursor_visible(animate=False)
+                except Exception as ui_error:
+                    # If UI update fails, don't let it block progress
+                    print(f"UI update error: {ui_error}")
+                    pass
+                
+                dot_index = (dot_index + 1) % len(dots)
+                await asyncio.sleep(0.5)
+        except asyncio.CancelledError:
+            # Task was cancelled, clean exit
+            output_area.text += "\n[Progress monitoring stopped]"
+            raise
     
     async def perform_research(self) -> None:
         """Perform the actual deep research"""
@@ -524,6 +542,9 @@ Please incorporate these clarifications into your research."""
                 output_area.text += f"[{datetime.now().strftime('%H:%M:%S')}] Sending request to deep research model...\n"
                 output_area.text += "The AI is now searching the web and analyzing sources...\n\n"
                 
+                # Add debug logging
+                output_area.text += f"[{datetime.now().strftime('%H:%M:%S')}] Making API call...\n"
+                
                 deep_research_call = await asyncio.to_thread(
                     self.client.responses.create,
                     # model="o4-mini-deep-research-2025-06-26", # cheaper, ~$3
@@ -549,10 +570,31 @@ Please incorporate these clarifications into your research."""
                     ],
                     timeout=7200.0  # 2 hour timeout for the API call itself
                 )
+                
+                # Log that we got a response
+                output_area.text += f"[{datetime.now().strftime('%H:%M:%S')}] API call completed, processing response...\n"
+            except KeyboardInterrupt:
+                # Handle Ctrl+C
+                output_area.text += "\n\n⚠️ Research interrupted by user (Ctrl+C)\n"
+                raise
+            except Exception as e:
+                # Log any other unexpected errors
+                output_area.text += f"\n\n❌ Unexpected error during API call: {type(e).__name__}: {str(e)}\n"
+                raise
             finally:
-                # Stop progress updates
+                # Stop progress updates - this MUST happen
                 self._research_running = False
-                await progress_task
+                output_area.text += f"\n[{datetime.now().strftime('%H:%M:%S')}] Stopping progress monitoring...\n"
+                
+                # Cancel the progress task instead of waiting for it
+                progress_task.cancel()
+                try:
+                    await progress_task
+                except asyncio.CancelledError:
+                    pass  # Expected when task is cancelled
+                
+                # Double-check the flag is set
+                self._research_running = False
             
             # Calculate elapsed time
             elapsed = (datetime.now() - start_time).total_seconds()
@@ -561,8 +603,54 @@ Please incorporate these clarifications into your research."""
             output_area.cursor_location = (output_area.document.line_count - 1, 0)
             output_area.scroll_cursor_visible()
             
-            # Access the final report from the response object
-            self.research_results = deep_research_call.output[-1].content[0].text
+            # Access the final report from the response object with error handling
+            try:
+                # Debug: log the response structure
+                output_area.text += f"\n[DEBUG] Response type: {type(deep_research_call)}\n"
+                if hasattr(deep_research_call, '__dict__'):
+                    output_area.text += f"[DEBUG] Response attributes: {list(deep_research_call.__dict__.keys())[:5]}...\n"
+                
+                # Try to extract the text
+                self.research_results = deep_research_call.output[-1].content[0].text
+                output_area.text += f"[{datetime.now().strftime('%H:%M:%S')}] Successfully extracted research results\n"
+            except (IndexError, AttributeError, TypeError) as e:
+                output_area.text += f"\n⚠️ Warning: Could not extract research results in expected format\n"
+                output_area.text += f"Error details: {type(e).__name__}: {str(e)}\n"
+                
+                # Try different extraction methods
+                extracted = False
+                
+                # Method 1: Check if it's a string response
+                if isinstance(deep_research_call, str):
+                    self.research_results = deep_research_call
+                    extracted = True
+                    output_area.text += "Extracted results as string\n"
+                
+                # Method 2: Try output attribute without indexing
+                elif hasattr(deep_research_call, 'output'):
+                    try:
+                        if isinstance(deep_research_call.output, str):
+                            self.research_results = deep_research_call.output
+                            extracted = True
+                        elif hasattr(deep_research_call.output, 'content'):
+                            self.research_results = str(deep_research_call.output.content)
+                            extracted = True
+                        else:
+                            self.research_results = str(deep_research_call.output)
+                            extracted = True
+                        output_area.text += f"Extracted results from output attribute\n"
+                    except Exception as e2:
+                        output_area.text += f"Failed to extract from output: {e2}\n"
+                
+                # Method 3: Check for content attribute directly
+                elif hasattr(deep_research_call, 'content'):
+                    self.research_results = str(deep_research_call.content)
+                    extracted = True
+                    output_area.text += "Extracted results from content attribute\n"
+                
+                if not extracted:
+                    self.research_results = f"Unable to extract research results. Response type: {type(deep_research_call)}"
+                    output_area.text += f"Could not extract results from response\n"
             
             output_area.text += "=" * 70 + "\n"
             output_area.text += "RESEARCH RESULTS:\n"
@@ -695,6 +783,14 @@ Please incorporate these clarifications into your research."""
             navigation = self.query_one("#navigation", Horizontal)
             navigation.refresh()
     
+    def action_cancel_research(self) -> None:
+        """Cancel ongoing research"""
+        if hasattr(self, '_research_running') and self._research_running:
+            self._research_running = False
+            if hasattr(self, 'research_task') and self.research_task and not self.research_task.done():
+                self.research_task.cancel()
+            self.notify("Research cancelled", severity="warning")
+    
     def action_reset(self) -> None:
         """Reset the app to initial state"""
         self.current_query = ""
@@ -710,7 +806,9 @@ Please incorporate these clarifications into your research."""
         # Keep the selected model from previous session
         
         # Cancel any running research task
-        if self.research_task and not self.research_task.done():
+        if hasattr(self, '_research_running'):
+            self._research_running = False
+        if hasattr(self, 'research_task') and self.research_task and not self.research_task.done():
             self.research_task.cancel()
         
         # Remove the View and Edit buttons if they exist
