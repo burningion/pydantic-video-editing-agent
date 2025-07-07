@@ -6,7 +6,7 @@ you are an award winning documentary producer. your job is to create a set of 6 
 
 > Nathan Fielder’s journey began in the Canadian comedy scene, where he first honed the techniques that would define his style. After earning a business degree in 2005, Fielder pivoted to comedy and moved to Toronto to study improv and make short films (https://www.thecanadianencyclopedia.ca/en/article/nathan-fielder). Between 2006 and 2011, he created DIY comedy videos and shorts, some of which he uploaded to YouTube, showcasing his talent for uncomfortable humor in embryonic form (https://www.vulture.com/article/nathan-fielder-best-early-comedy-videos.html). His big break came with a segment on the CBC’s satirical news show *This Hour Has 22 Minutes* (2007–2009), where he developed a recurring bit called “Nathan On Your Side” (https://www.thecanadianencyclopedia.ca/en/article/nathan-fielder). In these segments, Fielder played a naïvely earnest consumer watchdog, ambushing real people and officials with bizarre questions in a flat, serious tone. This early work introduced viewers to Fielder’s awkward persona – soft-spoken, painfully sincere, and unflinchingly deadpan – which often made those around him squirm or puzzle over whether he was joking. Many hallmarks of his later comedy were already evident: a zealous commitment to the bit, interactions that teetered between sincere and absurd, and a fascination with how ordinary people respond to uncomfortable situations (https://www.vulture.com/article/nathan-fielder-best-early-comedy-videos.html). These Canadian projects essentially served as a proving ground for Fielder’s signature style, allowing him to refine the art of making audiences (and his unwitting subjects) question what was real and what was satire.
 
-## Output (~2 minutes)
+## Output 1 (~2 minutes)
 
 ```
 {
@@ -87,3 +87,71 @@ you are an award winning documentary producer. your job is to create a set of 6 
 ]
 }
 ```
+
+## Output 2 (1m36s generation time, 442t up, 989t down)
+
+```
+{
+"beats": [
+{
+"duration_seconds": 5,
+"description": "Wide shot of a Canadian university graduation circa mid-2000s: students in black gowns file past a banner reading “Class of 2005.” One graduate clutches both a business diploma and a small notepad with scribbled joke ideas—hinting at Nathan Fielder’s pivot from business to comedy.",
+"footage_search_terms": [
+"2005 Canadian university graduation ceremony",
+"business graduate holding diploma",
+"student jotting comedy notes",
+"mid 2000s campus footage"
+]
+},
+{
+"duration_seconds": 5,
+"description": "Cut to bustling Toronto streets at dusk, then push inside a basement improv theatre. A young performer steps into a spotlight as classmates form a supportive semicircle—visualizing Fielder’s move to Toronto to study improv.",
+"footage_search_terms": [
+"Toronto skyline dusk 2000s",
+"small improv class rehearsal",
+"underground comedy club interior",
+"young comedians on stage"
+]
+},
+{
+"duration_seconds": 5,
+"description": "Handheld camcorder footage of a bedroom studio: tripod, cheap green screen, and an old CRT monitor displaying early-era YouTube. Quick cuts of quirky DIY comedy bits being filmed, capturing Fielder’s 2006-2011 YouTube shorts phase.",
+"footage_search_terms": [
+"early youtube video creation 2007",
+"handheld camcorder diy comedy",
+"bedroom green screen setup",
+"retro computer monitor uploading video"
+]
+},
+{
+"duration_seconds": 5,
+"description": "Studio graphic: CBC’s ‘This Hour Has 22 Minutes.’ Smash to Fielder-style street ambush—host with microphone labeled “Nathan On Your Side” confronting a suited official outside city hall.",
+"footage_search_terms": [
+"CBC news parody set",
+"This Hour Has 22 Minutes archive",
+"street interview microphone logo",
+"reporter questioning politician Canada"
+]
+},
+{
+"duration_seconds": 5,
+"description": "Montage of puzzled citizens: a cashier, an office manager, a passerby—each blinking, shifting, or half-smiling uncomfortably in response to off-camera questions, illustrating Fielder’s awkward interactions.",
+"footage_search_terms": [
+"awkward street reactions",
+"people confused interview",
+"uncomfortable customer service moment",
+"deadpan prank response faces"
+]
+},
+{
+"duration_seconds": 5,
+"description": "Close-up on Fielder’s expressionless face dissolves into a split-screen of real-world scenes and absurd on-screen graphics, ending with a quick rack-focus to a question mark—symbolizing the blurred line between satire and reality that his Canadian work refined.",
+"footage_search_terms": [
+"deadpan comedian close up",
+"split screen reality vs satire",
+"question mark graphic overlay",
+"documentary montage ending"
+]
+}
+]
+}```
