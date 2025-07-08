@@ -1,6 +1,5 @@
 from pydantic_ai import Agent
-from pydantic_ai.usage import UsageLimits
-from pydantic_ai.models.openai import OpenAIResponsesModel, OpenAIResponsesModelSettings
+from pydantic_ai.models.gemini import GeminiModel
 from pydantic_ai.mcp import MCPServerStdio
 
 from videojungle import ApiClient, VideoEditCreate, VideoEditAsset, VideoEditAudioAsset, VideoAudioLevel
@@ -8,7 +7,6 @@ from videojungle import ApiClient, VideoEditCreate, VideoEditAsset, VideoEditAud
 from typing import List, Dict, Tuple, Optional
 import instructor
 from openai import OpenAI
-from openai.types.responses import WebSearchToolParam
 
 from pydantic import BaseModel, Field
 from utils.tools import download
@@ -19,12 +17,15 @@ import click
 import re
 import json
 from datetime import datetime
-from uuid import UUID
 
 if not os.environ.get("VJ_API_KEY"):
     raise ValueError("VJ_API_KEY environment variable is not set.")
 
+if not os.environ.get("SERPER_API_KEY"):
+    raise ValueError("SERPER_API_KEY environment variable is not set.")
+
 vj_api_key = os.environ["VJ_API_KEY"]
+serper_api_key = os.environ["SERPER_API_KEY"]
 
 logfire.configure()
 logfire.instrument_openai()
@@ -40,6 +41,18 @@ vj_server = MCPServerStdio(
     ],
     env={
         'VJ_API_KEY': vj_api_key,
+    },
+    timeout=30
+)
+
+serper_server = MCPServerStdio(
+    'uvx',
+    args=[
+        '-p', '3.11',
+        'serper-mcp-server@latest',
+    ],
+    env={
+        'SERPER_API_KEY': serper_api_key,
     },
     timeout=30
 )
@@ -227,20 +240,37 @@ async def search_project_assets(project_id: str, search_terms: List[str]) -> Opt
     return None
 
 
-def create_search_agent():
-    """Create search agent with web search capabilities."""
-    model_settings = OpenAIResponsesModelSettings(
-        openai_builtin_tools=[WebSearchToolParam(type='web_search_preview')],
+async def search_for_videos_with_serper(search_query: str, scene_description: str) -> VideoList:
+    """Search for videos using Serper via MCP and Claude."""
+    # Create a search agent with Serper and VJ MCP servers
+    search_agent = Agent(
+        model=GeminiModel("gemini-2.5-flash-preview-05-20"),
+        mcp_servers=[serper_server, vj_server],
+        instructions="""You are an expert video sourcer. Use the Serper search tool to find relevant video content.
+        You also have access to Video Jungle tools to search existing video libraries.
+        Focus on finding actual video URLs from platforms like YouTube, Vimeo, Dailymotion, etc.
+        When searching, try different query variations to get better results.
+        Extract the actual video URLs from the search results.""",
+        output_type=VideoList,
     )
     
-    search_model = OpenAIResponsesModel('gpt-4o')
-    return Agent(
-        model=search_model,
-        model_settings=model_settings,
-        instructions='You are an expert video sourcer. You find the best source videos for a given topic using web search.',
-        output_type=VideoList,
-        instrument=True,
-    )
+    search_prompt = f"""
+    Search for video clips related to: {search_query}
+    
+    Scene description: {scene_description}
+    
+    Please search for 5-10 relevant videos that match this scene. Try variations of the search terms.
+    Focus on finding videos from major platforms that are likely to be available.
+    """
+    
+    try:
+        async with search_agent.run_mcp_servers():
+            result = await search_agent.run(search_prompt)
+            return result.output
+            
+    except Exception as e:
+        print(f"    Search error: {str(e)[:100]}")
+        return VideoList(videos=[])
 
 
 async def search_and_download_for_beat(beat: Beat, project: any) -> Optional[str]:
@@ -249,42 +279,48 @@ async def search_and_download_for_beat(beat: Beat, project: any) -> Optional[str
     
     # Combine search terms into a query
     search_query = " OR ".join(beat.search_terms[:2])
-    search_prompt = f"""
-    Search the web to find video clips for: {search_query}
-    
-    Scene needed: {beat.scene_description}
-    
-    Find 2-3 relevant video URLs that would match this scene description.
-    Focus on finding actual video content (YouTube, Vimeo, etc).
-    """
     
     try:
-        # Create a fresh search agent for this search
-        search_agent = create_search_agent()
-        result = await search_agent.run(search_prompt, usage_limits=UsageLimits(request_limit=2))
+        # Use Serper search for more reliable results
+        result = await search_for_videos_with_serper(search_query, beat.scene_description)
         
-        for video in result.output.videos[:2]:  # Try first 2 results
-            print(f"    Downloading: {video.title[:60]}...")
+        # Try up to 5 videos from search results
+        for i, video in enumerate(result.videos[:5]):
+            print(f"    Attempt {i+1}: {video.title[:60]}...")
             safe_title = video.title.replace('/', '-').replace('\\', '-')[:40]
             output_filename = f"beat_{beat.beat_number}_{safe_title}.mp4"
             
-            try:
-                download(video.url, output_path=output_filename, format="best")
-                
-                if os.path.exists(output_filename):
-                    # Upload to project
-                    asset = project.upload_asset(
-                        name=f"Beat {beat.beat_number}: {video.title}"[:100],
-                        description=f"Beat {beat.beat_number} - {beat.scene_description[:200]}",
-                        filename=output_filename,
-                    )
-                    os.remove(output_filename)
-                    print(f"    Uploaded successfully")
-                    return asset.id
+            # Try downloading with retries
+            for retry in range(2):  # 2 attempts per video
+                try:
+                    download(video.url, output_path=output_filename)
                     
-            except Exception as e:
-                print(f"    Download error: {str(e)[:50]}")
-                continue
+                    if os.path.exists(output_filename) and os.path.getsize(output_filename) > 1000:  # Check file exists and is not empty
+                        # Upload to project
+                        asset = project.upload_asset(
+                            name=f"Beat {beat.beat_number}: {video.title}"[:100],
+                            description=f"Beat {beat.beat_number} - {beat.scene_description[:200]}",
+                            filename=output_filename,
+                        )
+                        os.remove(output_filename)
+                        print(f"    Uploaded successfully")
+                        return asset.id
+                    else:
+                        if os.path.exists(output_filename):
+                            os.remove(output_filename)
+                        print(f"    Empty or invalid file, trying next...")
+                        break
+                        
+                except Exception as e:
+                    print(f"    Download attempt {retry+1} failed: {str(e)[:50]}")
+                    if os.path.exists(output_filename):
+                        os.remove(output_filename)
+                    if retry == 0:
+                        print(f"    Retrying...")
+                        time.sleep(2)
+                    else:
+                        print(f"    Moving to next video...")
+                        break
                 
     except Exception as e:
         print(f"  Search error: {str(e)[:100]}")
@@ -348,9 +384,15 @@ def create_edit_from_beats(project_id: str, beats_with_assets: List[BeatWithAsse
             start_time = f"00:00:{current_time:06.3f}"
             end_time = f"00:00:{current_time + time_per_beat:06.3f}"
             
+            # Determine asset type based on source
+            if beat_data.video_source == 'vj_library':
+                asset_type = "videofile"
+            else:
+                asset_type = "asset"
+            
             video_asset = VideoEditAsset(
-                video_id=UUID(beat_data.video_asset_id),
-                type="asset",
+                video_id=beat_data.video_asset_id,  # Pass as string, not UUID
+                type=asset_type,
                 video_start_time=start_time,
                 video_end_time=end_time,
                 audio_levels=[VideoAudioLevel(audio_level=0.5, start_time=start_time, end_time=end_time)]
@@ -363,7 +405,7 @@ def create_edit_from_beats(project_id: str, beats_with_assets: List[BeatWithAsse
     if voiceover_id:
         audio_end_time = f"00:00:{audio_duration:06.3f}"
         audio_overlay = VideoEditAudioAsset(
-            audio_id=UUID(voiceover_id),
+            audio_id=voiceover_id,  # Pass as string, not UUID
             type="voiceover",
             audio_start_time="00:00:00.000",
             audio_end_time=audio_end_time,
@@ -386,7 +428,7 @@ def create_edit_from_beats(project_id: str, beats_with_assets: List[BeatWithAsse
         subtitles=True
     )
     
-    # Create the edit
+    # Create the edit using the fixed API method
     try:
         edit = vj.projects.create_edit(project_id, edit_config)
         return edit

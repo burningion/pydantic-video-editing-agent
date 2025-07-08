@@ -100,7 +100,8 @@ class YtDlpImpersonator:
             'quiet': False,
             'format': format,
             # Simplify impersonation to just use browser name
-            'impersonate': self.target.client + (f"-{self.target.version}" if self.target.version else "")
+            'impersonate': self.target.client + (f"-{self.target.version}" if self.target.version else ""),
+            'cookiesfrombrowser': ('firefox',),  # Use cookies from Firefox browser
         }
         
         # Add output path if specified

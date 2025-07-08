@@ -13,8 +13,8 @@ dependencies = [
     "openai>=1.92.2",
     "pydantic-ai-slim[openai,anthropic,google]>=0.3.5",
     "textual>=3.5.0",
-    "videojungle>=0.1.74",
-    "yt-dlp[curl-cffi,default]>=2025.5.22",
+    "videojungle>=0.1.75",
+    "yt-dlp[curl-cffi,default]>=2025.6.30",
 ]
 
 [dependency-groups]

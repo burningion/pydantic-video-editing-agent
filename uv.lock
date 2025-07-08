@@ -2278,8 +2278,8 @@ requires-dist = [
     { name = "openai", specifier = ">=1.92.2" },
     { name = "pydantic-ai-slim", extras = ["openai", "anthropic", "google"], specifier = ">=0.3.5" },
     { name = "textual", specifier = ">=3.5.0" },
-    { name = "videojungle", specifier = ">=0.1.74" },
-    { name = "yt-dlp", extras = ["curl-cffi", "default"], specifier = ">=2025.5.22" },
+    { name = "videojungle", specifier = ">=0.1.75" },
+    { name = "yt-dlp", extras = ["curl-cffi", "default"], specifier = ">=2025.6.30" },
 ]
 
 [package.metadata.requires-dev]
@@ -2287,16 +2287,16 @@ dev = [{ name = "ipython", specifier = ">=9.2.0" }]
 
 [[package]]
 name = "videojungle"
-version = "0.1.74"
+version = "0.1.75"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "httpx" },
     { name = "pydantic" },
     { name = "requests" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/74/82/a390480bf9eadeda1b1ca9fecd9e4dad2437bfba0485faf43f62a598d0e2/videojungle-0.1.74.tar.gz", hash = "sha256:caac98328119775d85463ef58f8901659da1d830085d44dc740f012d64012241", size = 13615, upload-time = "2025-07-08T14:19:59.552Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/de/42/cebe8479f921e7ce5c49f031756b0d9c0324a8918533dedf6e0597514922/videojungle-0.1.75.tar.gz", hash = "sha256:5456f35ab411d0c716478608e9b897d7847b8735b7f7b4ca46e51a03c69a6cf7", size = 13565, upload-time = "2025-07-08T16:44:49.895Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/84/b9/47f9050241df04d1dd0d889236bdc3c7bda3a484c9c15da28d0396357314/videojungle-0.1.74-py3-none-any.whl", hash = "sha256:96d1f92937e380e664338f0ad0f63b5d640bc90e4ebccc4e4c1ffd9fe0d8fbdc", size = 13464, upload-time = "2025-07-08T14:19:57.984Z" },
+    { url = "https://files.pythonhosted.org/packages/15/a2/252d6e313079f4fdcf9ca2b9e7955b0e46f6305fb1eafa43428be45ec17d/videojungle-0.1.75-py3-none-any.whl", hash = "sha256:3358cb0eb3da412e4ea569a41e0b83c9c1ac20e21e6df44877d7aad2d03200fa", size = 13424, upload-time = "2025-07-08T16:44:48.741Z" },
 ]
 
 [[package]]
@@ -2537,11 +2537,11 @@ wheels = [
 
 [[package]]
 name = "yt-dlp"
-version = "2025.5.22"
+version = "2025.6.30"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/09/93/695cef32796dc7e76597e68a267a34a1b4e29bef8e12da445fa7c0ad1e55/yt_dlp-2025.5.22.tar.gz", hash = "sha256:ea73854c5dabc124f29a35a8fae9bc5d422ef3231bebeea2bdfa82ac191a9c29", size = 3017654, upload-time = "2025-05-22T09:58:35.694Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/23/9c/ff64c2fed7909f43a9a0aedb7395c65404e71c2439198764685a6e3b3059/yt_dlp-2025.6.30.tar.gz", hash = "sha256:6d0ae855c0a55bfcc28dffba804ec8525b9b955d34a41191a1561a4cec03d8bd", size = 3034364, upload-time = "2025-06-30T23:58:36.605Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/25/68/4f108193ebce3ee7beb5f9a21daa6bc875e261150b510be468626f151959/yt_dlp-2025.5.22-py3-none-any.whl", hash = "sha256:a49c4b76afeaded6254c3e2b759d8d5a13271aa963d5fccb51fe059d1c313151", size = 3264137, upload-time = "2025-05-22T09:58:32.613Z" },
+    { url = "https://files.pythonhosted.org/packages/14/41/2f048ae3f6d0fa2e59223f08ba5049dbcdac628b0a9f9deac722dd9260a5/yt_dlp-2025.6.30-py3-none-any.whl", hash = "sha256:541becc29ed7b7b3a08751c0a66da4b7f8ee95cb81066221c78e83598bc3d1f3", size = 3279333, upload-time = "2025-06-30T23:58:34.911Z" },
 ]
 
 [package.optional-dependencies]
