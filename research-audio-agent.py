@@ -187,14 +187,16 @@ async def search_vj_library(search_terms: List[str]) -> Optional[Dict]:
     """Search Video Jungle library for matching videos."""
     for term in search_terms:
         try:
-            results = vj.assets.search(query=term, limit=5)
+            # Use video_files.search to search the VJ library
+            results = vj.video_files.search(query=term, limit=5)
             if results and len(results) > 0:
                 # Return the first good match
                 for result in results:
-                    if result.get('type') == 'video':
+                    # Each result should have an 'id' field
+                    if 'id' in result:
                         return {
                             'id': result['id'],
-                            'name': result.get('name', ''),
+                            'name': result.get('name', result.get('filename', '')),
                             'source': 'vj_library'
                         }
         except Exception as e:
@@ -210,13 +212,14 @@ async def search_project_assets(project_id: str, search_terms: List[str]) -> Opt
         
         # Search through project assets
         for asset in assets:
-            if asset.get('type') == 'user':
-                asset_name = asset.get('name', '').lower()
+            # Asset is an object, not a dict
+            if hasattr(asset, 'asset_type') and asset.asset_type == 'user':
+                asset_name = (asset.keyname or '').lower()
                 for term in search_terms:
                     if term.lower() in asset_name:
                         return {
-                            'id': asset['id'],
-                            'name': asset.get('name', ''),
+                            'id': asset.id,
+                            'name': asset.keyname,
                             'source': 'project'
                         }
     except Exception as e:
@@ -224,20 +227,20 @@ async def search_project_assets(project_id: str, search_terms: List[str]) -> Opt
     return None
 
 
-# Create search agent with web search capabilities
-model_settings = OpenAIResponsesModelSettings(
-    openai_builtin_tools=[WebSearchToolParam(type='web_search_preview')],
-)
-
-search_model = OpenAIResponsesModel('gpt-4o')
-search_agent = Agent(
-    model=search_model,
-    model_settings=model_settings,
-    instructions='You are an expert video sourcer. You find the best source videos for a given topic using web search.',
-    mcp_servers=[vj_server],
-    output_type=VideoList,
-    instrument=True,
-)
+def create_search_agent():
+    """Create search agent with web search capabilities."""
+    model_settings = OpenAIResponsesModelSettings(
+        openai_builtin_tools=[WebSearchToolParam(type='web_search_preview')],
+    )
+    
+    search_model = OpenAIResponsesModel('gpt-4o')
+    return Agent(
+        model=search_model,
+        model_settings=model_settings,
+        instructions='You are an expert video sourcer. You find the best source videos for a given topic using web search.',
+        output_type=VideoList,
+        instrument=True,
+    )
 
 
 async def search_and_download_for_beat(beat: Beat, project: any) -> Optional[str]:
@@ -256,8 +259,9 @@ async def search_and_download_for_beat(beat: Beat, project: any) -> Optional[str
     """
     
     try:
-        async with search_agent.run_mcp_servers():
-            result = await search_agent.run(search_prompt, usage_limits=UsageLimits(request_limit=2))
+        # Create a fresh search agent for this search
+        search_agent = create_search_agent()
+        result = await search_agent.run(search_prompt, usage_limits=UsageLimits(request_limit=2))
         
         for video in result.output.videos[:2]:  # Try first 2 results
             print(f"    Downloading: {video.title[:60]}...")
