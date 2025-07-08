@@ -977,6 +977,24 @@ wheels = [
 ]
 
 [[package]]
+name = "logfire"
+version = "3.23.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "executing" },
+    { name = "opentelemetry-exporter-otlp-proto-http" },
+    { name = "opentelemetry-instrumentation" },
+    { name = "opentelemetry-sdk" },
+    { name = "protobuf" },
+    { name = "rich" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/0f/d7/59a1a1bc93179727f622a8bdc9da351258d153a4a4fdaddaa4003fc3360c/logfire-3.23.0.tar.gz", hash = "sha256:983ab57d5f99f1f2aa7f71702bf72a29a25a52bd1df7b1afc4b5611346e80029", size = 498800, upload-time = "2025-07-08T12:51:20.004Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c2/03/6e212f9a1c4c5eec815b173a19bea9fe3f0079ba1603e34a63117c71edee/logfire-3.23.0-py3-none-any.whl", hash = "sha256:e92c01fb6614c784f90fd1f3a688845550f4e3e32e4856df7659dc83182800dd", size = 205228, upload-time = "2025-07-08T12:51:16.719Z" },
+]
+
+[[package]]
 name = "logfire-api"
 version = "3.14.1"
 source = { registry = "https://pypi.org/simple" }
@@ -2237,6 +2255,7 @@ dependencies = [
     { name = "click" },
     { name = "fal-client" },
     { name = "instructor" },
+    { name = "logfire" },
     { name = "openai" },
     { name = "pydantic-ai-slim", extra = ["anthropic", "google", "openai"] },
     { name = "textual" },
@@ -2255,10 +2274,11 @@ requires-dist = [
     { name = "click", specifier = ">=8.1.8" },
     { name = "fal-client", git = "https://github.com/burningion/fal.git?subdirectory=projects%2Ffal_client&rev=kirk.kaiser%2Fhttpx.version.bump" },
     { name = "instructor", specifier = ">=1.9.0" },
+    { name = "logfire", specifier = ">=3.23.0" },
     { name = "openai", specifier = ">=1.92.2" },
     { name = "pydantic-ai-slim", extras = ["openai", "anthropic", "google"], specifier = ">=0.3.5" },
     { name = "textual", specifier = ">=3.5.0" },
-    { name = "videojungle", specifier = ">=0.1.72" },
+    { name = "videojungle", specifier = ">=0.1.73" },
     { name = "yt-dlp", extras = ["curl-cffi", "default"], specifier = ">=2025.5.22" },
 ]
 
@@ -2267,16 +2287,16 @@ dev = [{ name = "ipython", specifier = ">=9.2.0" }]
 
 [[package]]
 name = "videojungle"
-version = "0.1.72"
+version = "0.1.73"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "httpx" },
     { name = "pydantic" },
     { name = "requests" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/4d/9a/ead6f6555e781629bd31ee115008775c74de08b61b23dbb7662b2c8d5ac3/videojungle-0.1.72.tar.gz", hash = "sha256:24430d1fc389e36a9ca275575953a7a5762c7a327faeb30b683585f96ec27ca2", size = 13308, upload-time = "2025-06-19T01:45:33.292Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/c4/35/37990009b836be1a3917ba1cfe420a24db157324010db553bebd0b25781d/videojungle-0.1.73.tar.gz", hash = "sha256:bbd0beda2eb4cd11192330d5e5ebd0fa16b4fce6c1e305e1747502e5bfd2939f", size = 13333, upload-time = "2025-07-08T14:07:30.932Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/6d/a0/9d2b6d6d714b1bcda3702edc481397d98142120d05911075c19811df044b/videojungle-0.1.72-py3-none-any.whl", hash = "sha256:385d40207d5aaaa95717a618b99d20e6e8e5fa1ecb6ea4962cf7961dce43bd47", size = 13141, upload-time = "2025-06-19T01:45:32.153Z" },
+    { url = "https://files.pythonhosted.org/packages/57/0c/5baa389657f3d31ec8c5d544b3b34623a6df3590ee3f6ca1853ab102c576/videojungle-0.1.73-py3-none-any.whl", hash = "sha256:a5fc6a9494bf353376c961ea2b99fa69d97b754bc3399010e98f21f460a5185b", size = 13148, upload-time = "2025-07-08T14:07:29.959Z" },
 ]
 
 [[package]]
