@@ -196,12 +196,38 @@ def generate_voiceover_from_research(sections: List[Tuple[str, str]], project_id
         return None
 
 
-async def search_vj_library(search_terms: List[str]) -> Optional[Dict]:
+async def search_vj_library(search_terms: List[str], scene_description: str = "") -> Optional[Dict]:
     """Search Video Jungle library for matching videos."""
-    for term in search_terms:
+    # Try different search strategies
+    search_queries = []
+    
+    # 1. Individual search terms
+    search_queries.extend(search_terms)
+    
+    # 2. Combined search terms
+    if len(search_terms) > 1:
+        search_queries.append(" ".join(search_terms))
+    
+    # 3. Keywords from scene description
+    if scene_description:
+        # Extract key nouns/phrases from description
+        keywords = [word for word in scene_description.split() 
+                   if len(word) > 4 and word.lower() not in ['with', 'from', 'that', 'this', 'have', 'been']]
+        search_queries.extend(keywords[:3])
+    
+    # Remove duplicates while preserving order
+    seen = set()
+    unique_queries = []
+    for q in search_queries:
+        if q.lower() not in seen:
+            seen.add(q.lower())
+            unique_queries.append(q)
+    
+    # Search with each query
+    for query in unique_queries:
         try:
             # Use video_files.search to search the VJ library
-            results = vj.video_files.search(query=term, limit=5)
+            results = vj.video_files.search(query=query, limit=10)
             if results and len(results) > 0:
                 # Return the first good match
                 for result in results:
@@ -210,33 +236,47 @@ async def search_vj_library(search_terms: List[str]) -> Optional[Dict]:
                         return {
                             'id': result['id'],
                             'name': result.get('name', result.get('filename', '')),
-                            'source': 'vj_library'
+                            'source': 'vj_library',
+                            'matched_query': query
                         }
         except Exception as e:
-            print(f"VJ search error for '{term}': {str(e)[:50]}")
+            print(f"    VJ search error for '{query}': {str(e)[:50]}")
     return None
 
 
-async def search_project_assets(project_id: str, search_terms: List[str]) -> Optional[Dict]:
+async def search_project_assets(project_id: str, search_terms: List[str], scene_description: str = "") -> Optional[Dict]:
     """Search project assets for matching videos."""
     try:
         project = vj.projects.get(project_id)
         assets = project.assets
+        
+        # Create search queries
+        search_queries = [term.lower() for term in search_terms]
+        
+        # Add keywords from scene description
+        if scene_description:
+            keywords = [word.lower() for word in scene_description.split() 
+                       if len(word) > 4 and word.lower() not in ['with', 'from', 'that', 'this', 'have', 'been']]
+            search_queries.extend(keywords[:3])
         
         # Search through project assets
         for asset in assets:
             # Asset is an object, not a dict
             if hasattr(asset, 'asset_type') and asset.asset_type == 'user':
                 asset_name = (asset.keyname or '').lower()
-                for term in search_terms:
-                    if term.lower() in asset_name:
+                asset_desc = (getattr(asset, 'description', '') or '').lower()
+                
+                # Check both name and description
+                for query in search_queries:
+                    if query in asset_name or query in asset_desc:
                         return {
                             'id': asset.id,
                             'name': asset.keyname,
-                            'source': 'project'
+                            'source': 'project',
+                            'matched_query': query
                         }
     except Exception as e:
-        print(f"Project search error: {str(e)[:50]}")
+        print(f"    Project search error: {str(e)[:50]}")
     return None
 
 
@@ -244,7 +284,7 @@ async def search_for_videos_with_serper(search_query: str, scene_description: st
     """Search for videos using Serper via MCP and Claude."""
     # Create a search agent with Serper and VJ MCP servers
     search_agent = Agent(
-        model=GeminiModel("gemini-2.5-flash-preview-05-20"),
+        model=GeminiModel("gemini-2.5-pro"),
         mcp_servers=[serper_server, vj_server],
         instructions="""You are an expert video sourcer. Use the Serper search tool to find relevant video content.
         You also have access to Video Jungle tools to search existing video libraries.
@@ -336,20 +376,20 @@ async def find_or_create_video_for_beat(beat: Beat, project: any) -> BeatWithAss
     
     # 1. Search Video Jungle library first
     print("  Checking Video Jungle library...")
-    vj_result = await search_vj_library(beat.search_terms)
+    vj_result = await search_vj_library(beat.search_terms, beat.scene_description)
     if vj_result:
         beat_with_assets.video_asset_id = vj_result['id']
         beat_with_assets.video_source = 'vj_library'
-        print(f"  Found in VJ library: {vj_result['name'][:60]}")
+        print(f"  Found in VJ library: {vj_result['name'][:60]} (matched: {vj_result.get('matched_query', '')})")
         return beat_with_assets
     
     # 2. Search project assets
     print("  Checking project assets...")
-    project_result = await search_project_assets(project.id, beat.search_terms)
+    project_result = await search_project_assets(project.id, beat.search_terms, beat.scene_description)
     if project_result:
         beat_with_assets.video_asset_id = project_result['id']
         beat_with_assets.video_source = 'project'
-        print(f"  Found in project: {project_result['name'][:60]}")
+        print(f"  Found in project: {project_result['name'][:60]} (matched: {project_result.get('matched_query', '')})")
         return beat_with_assets
     
     # 3. Search and download from web
@@ -503,28 +543,85 @@ async def async_main(markdown_file: str, project_name: str, model: str = "o3-min
     print(f"  Found videos for {successful_beats}/{len(video_beats.beats)} beats")
     print(f"  Voiceover duration: {audio_duration:.1f} seconds")
     print(f"  Project ID: {project.id}")
-    print(f"  Project URL: https://app.videojungle.com/project/{project.id}")
+    print(f"  Project URL: https://app.video-jungle.com/projects/{project.id}")
     
-    # Save beats data for reference
-    beats_output = {
-        "project_id": project.id,
-        "voiceover_duration": audio_duration,
-        "beats": [
-            {
-                "beat_number": b.beat.beat_number,
-                "duration": b.beat.duration_seconds,
-                "description": b.beat.scene_description,
-                "video_source": b.video_source,
-                "has_video": b.video_asset_id is not None
+    # Save edit configuration in video edit JSON spec format
+    # Calculate time segments for each beat
+    beats_with_video = [b for b in beats_with_assets if b.video_asset_id]
+    time_per_beat = audio_duration / len(beats_with_video) if beats_with_video else 0
+    current_time = 0
+    
+    # Build video_series_sequential array
+    video_series_sequential = []
+    for b in beats_with_assets:
+        if b.video_asset_id:
+            start_time = f"00:00:{current_time:06.3f}"
+            end_time = f"00:00:{current_time + time_per_beat:06.3f}"
+            
+            video_clip = {
+                "video_id": b.video_asset_id,
+                "video_start_time": start_time,
+                "video_end_time": end_time,
+                "type": "videofile" if b.video_source == "vj_library" else "asset",
+                "audio_levels": [
+                    {
+                        "audio_level": "0.5",
+                        "start_time": start_time,
+                        "end_time": end_time
+                    }
+                ]
             }
-            for b in beats_with_assets
-        ]
+            video_series_sequential.append(video_clip)
+            current_time += time_per_beat
+    
+    # Build audio_overlay array for voiceover
+    audio_overlay = []
+    if voiceover_id:
+        audio_overlay.append({
+            "audio_id": voiceover_id,
+            "type": "voiceover",
+            "audio_start_time": "00:00:00.000",
+            "audio_end_time": f"00:00:{audio_duration:06.3f}",
+            "audio_levels": [
+                {
+                    "audio_level": "1.0",
+                    "start_time": "00:00:00.000",
+                    "end_time": f"00:00:{audio_duration:06.3f}"
+                }
+            ]
+        })
+    
+    # Create output in video edit spec format
+    edit_spec = {
+        "video_edit_version": "1.0",
+        "video_output_format": "mp4",
+        "video_output_resolution": "1920x1080",
+        "video_output_fps": 30.0,
+        "edit_name": f"documentary-{project.id}",
+        "video_output_filename": f"documentary_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp4",
+        "audio_overlay": audio_overlay,
+        "video_series_sequential": video_series_sequential,
+        "metadata": {
+            "project_id": project.id,
+            "project_url": f"https://app.video-jungle.com/project/{project.id}",
+            "total_duration": audio_duration,
+            "beats_with_video": len(beats_with_video),
+            "total_beats": len(beats_with_assets),
+            "missing_beats": [
+                {
+                    "beat_number": b.beat.beat_number,
+                    "description": b.beat.scene_description,
+                    "search_terms": b.beat.search_terms
+                }
+                for b in beats_with_assets if not b.video_asset_id
+            ]
+        }
     }
     
-    output_file = f"beats_{project.id}.json"
+    output_file = f"edit_{project.id}.json"
     with open(output_file, 'w') as f:
-        json.dump(beats_output, f, indent=2)
-    print(f"  Saved beats data to: {output_file}")
+        json.dump(edit_spec, f, indent=2)
+    print(f"  Saved edit spec to: {output_file}")
 
 
 @click.command()
