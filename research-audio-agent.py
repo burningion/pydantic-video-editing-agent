@@ -61,6 +61,8 @@ serper_server = MCPServerStdio(
 class VideoItem(BaseModel):
     url: str
     title: str
+    relevance_score: float = Field(default=0.0, description="Relevance score from 0-1 based on match to beat description")
+    relevance_reason: str = Field(default="", description="Brief explanation of relevance")
 
 
 class VideoList(BaseModel):
@@ -281,26 +283,46 @@ async def search_project_assets(project_id: str, search_terms: List[str], scene_
 
 
 async def search_for_videos_with_serper(search_query: str, scene_description: str) -> VideoList:
-    """Search for videos using Serper via MCP and Claude."""
+    """Search for videos using Serper via MCP and Claude with relevance ranking."""
     # Create a search agent with Serper and VJ MCP servers
     search_agent = Agent(
         model=GeminiModel("gemini-2.5-pro"),
         mcp_servers=[serper_server, vj_server],
-        instructions="""You are an expert video sourcer. Use the Serper search tool to find relevant video content.
+        instructions="""You are an expert video sourcer and relevance analyst. Use the Serper search tool to find relevant video content.
         You also have access to Video Jungle tools to search existing video libraries.
         Focus on finding actual video URLs from platforms like YouTube, Vimeo, Dailymotion, etc.
-        When searching, try different query variations to get better results.
-        Extract the actual video URLs from the search results.""",
+        
+        CRITICAL: For each video found, you MUST:
+        1. Analyze how well the video title/description matches the scene requirements
+        2. Assign a relevance_score from 0.0 to 1.0 based on:
+           - 0.8-1.0: Excellent match - video clearly depicts the described scene
+           - 0.6-0.8: Good match - video contains relevant elements
+           - 0.4-0.6: Moderate match - somewhat related but missing key elements
+           - 0.2-0.4: Poor match - only tangentially related
+           - 0.0-0.2: Very poor match - barely related or wrong context
+        3. Provide a brief relevance_reason explaining the score
+        4. Sort results by relevance_score in descending order
+        
+        Only include videos with relevance_score >= 0.5 in your final results.""",
         output_type=VideoList,
     )
     
     search_prompt = f"""
-    Search for video clips related to: {search_query}
+    Search for video clips that match this specific scene:
     
     Scene description: {scene_description}
+    Search terms: {search_query}
     
-    Please search for 5-10 relevant videos that match this scene. Try variations of the search terms.
-    Focus on finding videos from major platforms that are likely to be available.
+    IMPORTANT: You must find videos that actually depict or relate to "{scene_description}".
+    
+    For each video:
+    1. Search using the provided terms and variations
+    2. Evaluate how well each result matches the scene description
+    3. Score each video's relevance (0.0-1.0)
+    4. Only return videos with relevance >= 0.5
+    5. Sort by relevance score (highest first)
+    
+    Return 5-10 highly relevant videos that truly match the scene requirements.
     """
     
     try:
@@ -316,17 +338,28 @@ async def search_for_videos_with_serper(search_query: str, scene_description: st
 async def search_and_download_for_beat(beat: Beat, project: any) -> Optional[str]:
     """Search web and download video for a specific beat."""
     print(f"\n  Searching web for Beat {beat.beat_number} videos...")
+    print(f"  Scene: {beat.scene_description[:80]}...")
     
     # Combine search terms into a query
     search_query = " OR ".join(beat.search_terms[:2])
     
     try:
-        # Use Serper search for more reliable results
+        # Use Serper search with relevance scoring
         result = await search_for_videos_with_serper(search_query, beat.scene_description)
         
-        # Try up to 5 videos from search results
-        for i, video in enumerate(result.videos[:5]):
-            print(f"    Attempt {i+1}: {video.title[:60]}...")
+        if not result.videos:
+            print("    No relevant videos found (all scored < 0.5)")
+            return None
+        
+        # Sort by relevance score (should already be sorted, but ensure)
+        sorted_videos = sorted(result.videos, key=lambda v: v.relevance_score, reverse=True)
+        
+        # Try videos in order of relevance
+        for i, video in enumerate(sorted_videos[:5]):
+            print(f"    Attempt {i+1}: {video.title[:50]}... (relevance: {video.relevance_score:.2f})")
+            if video.relevance_reason:
+                print(f"      Reason: {video.relevance_reason[:80]}...")
+            
             safe_title = video.title.replace('/', '-').replace('\\', '-')[:40]
             output_filename = f"beat_{beat.beat_number}_{safe_title}.mp4"
             
@@ -339,11 +372,11 @@ async def search_and_download_for_beat(beat: Beat, project: any) -> Optional[str
                         # Upload to project
                         asset = project.upload_asset(
                             name=f"Beat {beat.beat_number}: {video.title}"[:100],
-                            description=f"Beat {beat.beat_number} - {beat.scene_description[:200]}",
+                            description=f"Beat {beat.beat_number} - {beat.scene_description[:150]} (relevance: {video.relevance_score:.2f})",
                             filename=output_filename,
                         )
                         os.remove(output_filename)
-                        print(f"    Uploaded successfully")
+                        print(f"    Uploaded successfully (relevance score: {video.relevance_score:.2f})")
                         return asset.id
                     else:
                         if os.path.exists(output_filename):
@@ -477,34 +510,60 @@ def create_edit_from_beats(project_id: str, beats_with_assets: List[BeatWithAsse
         return None
 
 
-async def async_main(markdown_file: str, project_name: str, model: str = "o3-mini"):
+async def async_main(markdown_file: str, project_id: Optional[str], model: str = "o3-mini"):
     """Process a markdown research file and create a video documentary."""
     # Parse markdown sections (skip introduction)
     print(f"Parsing markdown file: {markdown_file}")
     sections = parse_markdown_sections(markdown_file, skip_intro=True)
     print(f"  Found {len(sections)} sections to process")
     
-    # Create Video Jungle project first
-    print(f"\nCreating Video Jungle project...")
-    if not project_name:
+    # Get or create Video Jungle project
+    if project_id:
+        print(f"\nUsing existing Video Jungle project: {project_id}")
+        try:
+            project = vj.projects.get(project_id)
+            print(f"  Found project: {project.name}")
+            # Get the first script ID from the existing project
+            if project.scripts and len(project.scripts) > 0:
+                script_id = project.scripts[0].id
+            else:
+                print("  Warning: No scripts found in project, creating new prompt...")
+                prompt = vj.prompts.generate(
+                    task="You are creating cinematic documentary narration. The tone should be engaging, dramatic, and professional.",
+                    parameters=["script", "context"]
+                )
+                # Update project with new prompt
+                project = vj.projects.update(
+                    project_id,
+                    prompt_id=prompt.id,
+                    generation_method="prompt-to-speech"
+                )
+                script_id = project.scripts[0].id
+        except Exception as e:
+            print(f"  Error getting project: {str(e)}")
+            print("  Creating new project instead...")
+            project_id = None
+    
+    if not project_id:
+        print(f"\nCreating new Video Jungle project...")
         project_name = f"Documentary: {os.path.basename(markdown_file).replace('.md', '')}"
-    
-    # Create prompt for voiceover generation
-    prompt = vj.prompts.generate(
-        task="You are creating cinematic documentary narration. The tone should be engaging, dramatic, and professional.",
-        parameters=["script", "context"]
-    )
-    
-    # Create project
-    project = vj.projects.create(
-        name=project_name,
-        description=f"Documentary video from research: {markdown_file}",
-        prompt_id=prompt.id,
-        generation_method="prompt-to-speech"
-    )
-    
-    script_id = project.scripts[0].id
-    print(f"  Created project: {project.name} (ID: {project.id})")
+        
+        # Create prompt for voiceover generation
+        prompt = vj.prompts.generate(
+            task="You are creating cinematic documentary narration. The tone should be engaging, dramatic, and professional.",
+            parameters=["script", "context"]
+        )
+        
+        # Create project
+        project = vj.projects.create(
+            name=project_name,
+            description=f"Documentary video from research: {markdown_file}",
+            prompt_id=prompt.id,
+            generation_method="prompt-to-speech"
+        )
+        
+        script_id = project.scripts[0].id
+        print(f"  Created project: {project.name} (ID: {project.id})")
     
     # Generate voiceover first from research text
     print("\nGenerating 30-second voiceover from research...")
@@ -626,12 +685,12 @@ async def async_main(markdown_file: str, project_name: str, model: str = "o3-min
 
 @click.command()
 @click.option('--markdown-file', '-m', required=True, help='Path to the markdown research file')
-@click.option('--project-name', '-p', default=None, help='Name for the Video Jungle project')
+@click.option('--project-id', '-p', default=None, help='Existing Video Jungle project ID to use (if not provided, creates a new project)')
 @click.option('--model', '-o', default='o3-mini', help='Model to use for beat generation (default: o3-mini)')
-def main(markdown_file: str, project_name: str, model: str):
+def main(markdown_file: str, project_id: str, model: str):
     """Process a markdown research file and create a video documentary with beats."""
     import asyncio
-    asyncio.run(async_main(markdown_file, project_name, model))
+    asyncio.run(async_main(markdown_file, project_id, model))
 
 
 if __name__ == "__main__":
